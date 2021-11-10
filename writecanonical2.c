@@ -22,8 +22,8 @@ int main(int argc, char** argv)
     int i, sum = 0, speed = 0;
     
     if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
+  	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
+  	      (strcmp("/dev/ttyS11", argv[1])!=0) )) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
@@ -61,7 +61,13 @@ int main(int argc, char** argv)
     leitura do(s) pr�ximo(s) caracter(es)
   */
 
-
+    char trame[5];
+    char flag = 0x7e;
+    trame[0] = flag;
+    trame[1] = 0x03;
+    trame[2] = 0x03;
+    trame[3] = 0x03 ^ 0x03;
+    trame[4] = flag;
 
     tcflush(fd, TCIOFLUSH);
 
@@ -72,8 +78,13 @@ int main(int argc, char** argv)
 
     printf("New termios structure set\n");
 
+
+    
+
+    
+
     //Read the Input
-    gets(buf);
+    fgets(buf,255,stdin);
     printf("Message sent: %s\n", buf);
     
     //Write the Input
@@ -104,12 +115,27 @@ int main(int argc, char** argv)
       if (ch2 == '\0') {
         //Uma vez que '\0' é quando deve parar
         STOP = TRUE;
+        
       }
     }
  
     printf("serial port result: %s\n", buf2);
 
     //----------------------------------------
+
+    //Write trame
+    
+    res = write(fd,trame,sizeof(buf));   
+    if (res == -1){
+      printf("Error!\n");
+      exit(1);
+    }
+
+    for(int i =0; i<5; i++){
+      printf("Trame sent: 0x%02x",trame[i]);
+
+    }
+    
  
 
 
