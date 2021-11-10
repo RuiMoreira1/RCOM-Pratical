@@ -20,8 +20,8 @@ int main(int argc, char** argv)
     char buf[255];
 
     if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
+  	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
+  	      (strcmp("/dev/ttyS11", argv[1])!=0) )) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
@@ -98,6 +98,30 @@ int main(int argc, char** argv)
       printf("Error!\n");
       exit(1);
     }
+
+    STOP = FALSE;
+    
+
+    while (STOP==FALSE) {    
+      char ch;  
+      res = read(fd, &ch,1);  
+
+      //Averiguar se deu erro
+      if(res == -1){
+        printf("Error!\n");
+        exit(1);
+      } 
+
+      //Colocar no buf
+      buf[i]= ch;         
+      i++;     
+
+      //Averiguar se chegou ao final 
+      if(ch == '0x73'){
+        STOP = TRUE;
+      }
+    }
+    printf("received: %s\n", buf);
 
 
     sleep(1);
