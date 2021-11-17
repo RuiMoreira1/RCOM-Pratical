@@ -5,6 +5,9 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h> 
 
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
@@ -70,11 +73,12 @@ int main(int argc, char** argv)
 
     printf("New termios structure set\n");
 
-
+    FILE * fd1 = fdopen(fd,"r+");
     int i = 0;
     while (STOP==FALSE) {    
       char ch;  
-      res = read(fd, &ch,1);  
+      //res = read(fd, &ch,1);
+      res = fread( &ch, 1,1,fd1 );
 
       //Averiguar se deu erro
       if(res == -1){
@@ -93,19 +97,23 @@ int main(int argc, char** argv)
     }
     printf("received: %s\n", buf);
 
+
+
     int res2 = write(fd, buf, sizeof(buf));
+    //int res2 = fwrite(buf,strlen(buf),strlen(buf), fd1);
     if (res2 == -1){
       printf("Error!\n");
       exit(1);
     }
 
     STOP = FALSE;
+    printf("Sent!\n");
     
-
+    char buf1[255];
     while (STOP==FALSE) {    
-      char ch;  
-      res = read(fd, &ch,1);  
-
+      char ch2;  
+      //res = read(fd, &ch2,1);  
+      res = fread( &ch2, 1,1,fd1 );
       //Averiguar se deu erro
       if(res == -1){
         printf("Error!\n");
@@ -113,11 +121,13 @@ int main(int argc, char** argv)
       } 
 
       //Colocar no buf
-      buf[i]= ch;         
-      i++;     
+      buf1[i]= ch2;         
+      i++;   
 
+      printf("Trame sent: 0x%02x",ch2) ;
+      //printf("received: %s\n", buf1);
       //Averiguar se chegou ao final 
-      if(ch == '0x73'){
+      if(ch2 == 0x7e){
         STOP = TRUE;
       }
     }

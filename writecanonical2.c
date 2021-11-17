@@ -5,6 +5,9 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h> 
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
@@ -16,8 +19,9 @@ volatile int STOP=FALSE;
 
 int main(int argc, char** argv)
 {
-    int fd,c, res;
+    int c, res,fd;
     struct termios oldtio,newtio;
+    FILE * fd1;
     char buf[255];
     int i, sum = 0, speed = 0;
     
@@ -37,6 +41,8 @@ int main(int argc, char** argv)
 
     fd = open(argv[1], O_RDWR | O_NOCTTY );
     if (fd <0) {perror(argv[1]); exit(-1); }
+
+    
 
     if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
       perror("tcgetattr");
@@ -86,9 +92,12 @@ int main(int argc, char** argv)
     //Read the Input
     fgets(buf,255,stdin);
     printf("Message sent: %s\n", buf);
+    buf[strlen(buf) +1] = '\0';
+
+    fd1 = fdopen(fd,"r+");
     
     //Write the Input
-    res = write(fd,buf,sizeof(buf));   
+    res = fwrite(buf,strlen(buf),strlen(buf), fd1); 
     if (res == -1){
       printf("Error!\n");
       exit(1);
@@ -100,17 +109,21 @@ int main(int argc, char** argv)
     //----------------------------------------
     printf("from the serial port:\n");
 
+
     char buf2[255]; i = 0;
     while (STOP == FALSE) {
       char ch2;
+      printf(":%d \n",ch2);
       //Por char em ch2
-      if (read(fd, &ch2, 1) == -1) {
+      if (fread( &ch2, 1,1,fd1) == -1) {
         printf("Error!\n"); exit(1);
       }
 
       //Colocar char de ch2 em buf2
       buf2[i] = ch2;
       i++;
+
+      printf(":%d \n",ch2);
 
       if (ch2 == '\0') {
         //Uma vez que '\0' é quando deve parar
@@ -125,7 +138,7 @@ int main(int argc, char** argv)
 
     //Write trame
     
-    res = write(fd,trame,sizeof(buf));   
+    res = fwrite(trame,strlen(trame),strlen(trame),fd1);   
     if (res == -1){
       printf("Error!\n");
       exit(1);
