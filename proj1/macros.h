@@ -16,6 +16,8 @@
 #define A_RS 0x01  /* A byte for Receiver to sender */
 #define C_UA 0x07  /* Ua Trame Cfield */
 #define C_SET 0x03  /* Set Trame CField */
+#define C_DISC 0x0B /* Disc Trame CField */
+
 
 
 

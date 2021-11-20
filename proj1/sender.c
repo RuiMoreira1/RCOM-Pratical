@@ -97,13 +97,11 @@ int sendSetFrame(int fd){
 
 		while(setState != STOP_){
 			if( conta == 3 ){
-				printf("Entered coms\n");
 				perror("Communication between Receiver && Sender failed\n");
-				exit(1);
+				return ERROR;
 			}
 
 			if( flag ){
-				printf("Entered write to fd\n");
 				flag = 0; /* Disable message send flags */
 				if( write(fd, setFrame, 5) == -1 ){
 					perror("Error writing to Serial Port SET trame\n");
@@ -113,7 +111,7 @@ int sendSetFrame(int fd){
 				alarm(ALARM_INTERVAL);
 			}
 
-			if( checkSupervisionFrame(&setState, fd, A_SR, C_UA, NULL) < 0) return ERROR;  /* Getting information byte by byte */
+			if( checkSupervisionFrame(&setState, fd, A_SR, C_UA, NULL) == ERROR) return ERROR;  /* Getting information byte by byte */
 		}
 
 		if(DEBUG) printf("Sucessfully got UA response from receiver\n");
@@ -121,6 +119,54 @@ int sendSetFrame(int fd){
 		alarm(0); /* Disconnect alarm */
 
 		return SUCESS;
+}
+
+int senderDisc(int fd){
+	resetAlarmFlags();  /* Reset alarm flags */
+
+	char frame[5] = {FLAG, A_SR, C_DISC, BCC(A_SR,C_DISC), FLAG};
+
+	MACHINE_STATE senderState = START_;
+
+	while( senderState != STOP_ ){
+		if( conta == 3 ){
+			printf("Communication between Receiver && Sender failed\n");
+			return ERROR;
+		}
+
+		if( flag ){
+			flag = 0;
+			if( write(fd, frame, 5) == -1 ){
+				perror("Error writing to Serial Port DISC trame\n");
+				return ERROR;
+			}
+			senderState = START_;
+			alarm(ALARM_INTERVAL);
+		}
+
+		if( checkSupervisionFrame(&senderState, fd, A_SR, C_DISC, NULL) == ERROR) return ERROR;
+	}
+
+	alarm(0); /* Disable alarm, frame read correctly */
+
+	if(sendSupervisionFrame(fd, A_SR, C_UA) == ERROR) return ERROR;
+
+	return SUCESS;
+
+}
+
+int closeSender(int fd){
+	if( senderDisc(fd) == ERROR ) return ERROR;
+
+	sleep(1);
+
+	if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
+  {
+    perror("tcsetattr");
+    exit(-1);
+  }
+  close(fd);
+  return 0;
 }
 
 
@@ -135,7 +181,11 @@ int main(int argc, char **argv)
   }
 
 	printf("Sender active\n");
-  openSender(argv[1]);
+  int fd = openSender(argv[1]);
+
+	printf("Closing\n");
+
+	closeSender(fd);
 
 
 }

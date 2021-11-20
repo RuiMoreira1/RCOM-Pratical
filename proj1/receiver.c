@@ -87,6 +87,35 @@ int receiveSetFrame( int fd ){
   return SUCESS;
 }
 
+int closeReceiver(int fd){
+  if( receiverDisc(fd) == ERROR ) return ERROR;
+
+  sleep(1); // Avoid changing config before sending data (transmission error)
+
+  tcsetattr(fd,TCSANOW,&oldtiosreceiver);
+  close(fd);
+  return 0;
+}
+
+int receiverDisc(int fd){
+  MACHINE_STATE receiverState = START_;
+
+  if(DEBUG) printf("Receiving DISC\n");
+  while( receiverState != STOP_ ) {
+    if( checkSupervisionFrame(&receiverState, fd, A_SR, C_DISC, NULL) == ERROR) return ERROR;
+  }
+
+  if( sendSupervisionFrame(fd, A_SR, C_DISC) == ERROR) return ERROR;
+
+  if(DEBUG) printf("Receiving UA\n");
+  receiverState = START_;
+  while( receiverState != STOP_ ) {
+    if( checkSupervisionFrame(&receiverState, fd, A_SR, C_UA, NULL) == ERROR) return ERROR;
+  }
+
+  return SUCESS;
+}
+
 
 
 int main(int argc, char **argv)
@@ -101,7 +130,11 @@ int main(int argc, char **argv)
 
   printf("Running\n");
 
-  openReceiver(argv[1]);
+  int fd = openReceiver(argv[1]);
+
+  printf("Sleeping\n");
+
+  closeReceiver(fd);
 
 
 }

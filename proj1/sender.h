@@ -34,4 +34,8 @@ int openSender(char filename[]);
 int sendSetFrame(int fd);
 
 
+int closeSender(int fd);
+
+int senderDisc(int fd);
+
 #endif
