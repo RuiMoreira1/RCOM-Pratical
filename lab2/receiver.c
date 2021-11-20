@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include "stateMachine.h"
 
-
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,6 +19,41 @@
 #define FALSE 0
 #define TRUE 1
 
+void updateState(MACHINE_STATE *state, int id, char flag){
+  switch(*state){
+    case START_:
+      printf("Entered in START_\n");
+      if( flag == FLAG ) *state = FLAG_RCV;
+      else *state = START_;
+      break;
+    case FLAG_RCV:
+      printf("Entered in FLAG_RCV\n");
+      if( flag == FLAG) *state = FLAG_RCV;
+      else if( flag == A_SR ) *state = A_RCV;
+      else *state = START_;
+      break;
+    case A_RCV:
+      printf("Entered in A_RCV\n");
+      if( flag == FLAG ) *state = FLAG_RCV;
+      else if( (flag == C_SET && id == RECEIVERID) || (flag = C_UA && id == SENDERID) ) *state = C_RCV;
+      else *state = START_;
+      break;
+    case C_RCV:
+      printf("Entered in C_RCV\n");
+      if( flag == FLAG ) *state = FLAG_RCV;
+      else if( (flag == BCC(A_SR,C_SET) && id == RECEIVERID) || (flag == BCC(A_SR, C_UA) && id == SENDERID) ) *state = BCC_OK;
+      else *state = START_;
+      break;
+    case BCC_OK:
+      printf("Entered in BCC_OK\n");
+      if( flag == FLAG ) *state = STOP_;
+      else *state = START_;
+      break;
+    default:
+      printf("Default statement reached\n");
+      break;
+    }
+}
 
 volatile int STOP = FALSE;
 
@@ -82,7 +116,7 @@ int main(int argc, char **argv)
   printf("New termios structure set\n");
 
 
-  MACHINE_STATE state = START_;
+  MACHINE_STATE receiver_state = START_;
   char c;
   int bytes_received = 0;
   while (STOP == FALSE){
@@ -97,9 +131,9 @@ int main(int argc, char **argv)
 
     printf("Trame received (receptor)-> %02x\n", c);
 
-    updateStateMachine(state, 1, c);
+    updateStateMachine(&receiver_state, RECEIVERID, c);
 
-    if (state == STOP_ ) {
+    if ( receiver_state == STOP_ ) {
       STOP = TRUE;
     }
 
@@ -108,10 +142,10 @@ int main(int argc, char **argv)
   printf("Bytes received from sender: %d\n",bytes_received);
   printf("Sending the string to emissor\n");
 
-  char receiver_trame[6] = {FLAG, A_SR, C_UA, BCC(A_SR,C_UA), FLAG, '\0'};
+  char receiver_trame[6] = {FLAG, A_SR, C_UA, BCC(A_SR,C_UA), FLAG};
 
   int res_w;
-  res_w = write(fd,receiver_trame,6);
+  res_w = write(fd,receiver_trame,5);
   if( res_w == -1 ){
     printf("Error writing to serial port\n");
     exit(1);

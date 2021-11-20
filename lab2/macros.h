@@ -4,6 +4,8 @@
 #define SENDERID 1
 #define RECEIVERID 0
 
+#define DEBUG 0  //Debug 1 Enabled, Debug 0 Disabled
+
 
 #define BIT(n) 1 << n
 
