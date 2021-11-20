@@ -118,11 +118,9 @@ int main(int argc, char **argv)
 
   MACHINE_STATE receiver_state = START_;
   char c;
-  int bytes_received = 0;
+
   while (STOP == FALSE){
     res = read(fd, &c, 1);
-    bytes_received++;
-
 
     if( res == -1 ){
       printf("Error reading from buffer\n");
@@ -139,13 +137,12 @@ int main(int argc, char **argv)
 
   }
 
-  printf("Bytes received from sender: %d\n",bytes_received);
+
   printf("Sending the string to emissor\n");
 
-  char receiver_trame[6] = {FLAG, A_SR, C_UA, BCC(A_SR,C_UA), FLAG};
+  char receiver_trame[5] = {FLAG, A_SR, C_UA, BCC(A_SR,C_UA), FLAG};
 
-  int res_w;
-  res_w = write(fd,receiver_trame,5);
+  int res_w = write(fd,receiver_trame,5);
   if( res_w == -1 ){
     printf("Error writing to serial port\n");
     exit(1);

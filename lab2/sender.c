@@ -24,40 +24,12 @@ volatile int STOP = FALSE;
 
 MACHINE_STATE senderState;
 
-void updateStateSender(MACHINE_STATE *state, int id, char flag){
-  switch(*state){
-    case START_:
-      printf("Entered in START_\n");
-      if( flag == FLAG ) *state = FLAG_RCV;
-      else *state = START_;
-      break;
-    case FLAG_RCV:
-      printf("Entered in FLAG_RCV\n");
-      if( flag == FLAG) *state = FLAG_RCV;
-      else if( flag == A_SR ) *state = A_RCV;
-      else *state = START_;
-      break;
-    case A_RCV:
-      printf("Entered in A_RCV\n");
-      if( flag == FLAG ) *state = FLAG_RCV;
-      else if( (flag == C_SET && id == RECEIVERID) || (flag = C_UA && id == SENDERID) ) *state = C_RCV;
-      else *state = START_;
-      break;
-    case C_RCV:
-      printf("Entered in C_RCV\n");
-      if( flag == FLAG ) *state = FLAG_RCV;
-      else if( (flag == BCC(A_SR,C_SET) && id == RECEIVERID) || (flag == BCC(A_SR, C_UA) && id == SENDERID) ) *state = BCC_OK;
-      else *state = START_;
-      break;
-    case BCC_OK:
-      printf("Entered in BCC_OK\n");
-      if( flag == FLAG ) *state = STOP_;
-      else *state = START_;
-      break;
-    default:
-      printf("Default statement reached\n");
-      break;
-    }
+int conta = 0, flag = 1;
+
+void atende(){
+	printf("alarme # %d\n", conta+1);
+	flag=1;
+	conta++;
 }
 
 int main(int argc, char **argv)
@@ -122,10 +94,15 @@ int main(int argc, char **argv)
 
   //fgets(buf,255,stdin);
 
-  char transmmiter_trame[6] = {FLAG, A_SR, C_SET, BCC(A_SR,C_SET), FLAG};
+  char transmmiter_trame[5] = {FLAG, A_SR, C_SET, BCC(A_SR,C_SET), FLAG};
 
 
   res = write(fd, transmmiter_trame, 5);
+  if( res == -1 ){
+    printf("Error writing to fd\n");
+    exit(1);
+  }
+
   printf("%d bytes written\n", res);
 
   printf("Receiving info from serial port\n");
@@ -135,6 +112,20 @@ int main(int argc, char **argv)
   MACHINE_STATE senderState = START_;
 
   while (STOP == FALSE){
+    if( conta == 3 ){
+      printf("Communication failed\n");
+      break;
+    }
+
+    if( flag ){
+      if( write(fd, transmmiter_trame, 5) == -1 ){
+        printf("Error writing to fd\n");
+        exit(1);
+      }
+      flag = 0;
+      alarm(3);
+    }
+
     res2 = read(fd, &c, 1);
 
     if( res2 == -1 ){
