@@ -1,3 +1,12 @@
 # RCOM-Pratical
-Work developed for Rcom Pratical Lessons
-https://prod.liveshare.vsengsaas.visualstudio.com/join?EDD8A7F85B5CCA511E97111E67A68E1DA0CF
+
+Work developed for RCOM UC Pratical Lessons
+
+* [Lab1](lab1)
+* [Lab2](lab2)
+* [Project1](proj1)
+
+# Work developed
+
+* Rui Moreira **up201906355**
+* José Silva **up201904775**

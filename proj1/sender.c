@@ -125,7 +125,8 @@ int main(int argc, char **argv)
       flag = 0;
       alarm(3);
     }
-    
+
+    res2 = read(fd, &c, 1);
 
     if( res2 == -1 ){
       printf("Error reading from buffer\n");

@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include "stateMachine.h"
 
-
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,25 +19,49 @@
 #define FALSE 0
 #define TRUE 1
 
-volatile int STOP = FALSE;
-
-MACHINE_STATE senderState;
-
-int conta = 0, flag = 1;
-
-void atende(){
-	printf("alarme # %d\n", conta+1);
-	flag=1;
-	conta++;
+void updateState(MACHINE_STATE *state, int id, char flag){
+  switch(*state){
+    case START_:
+      printf("Entered in START_\n");
+      if( flag == FLAG ) *state = FLAG_RCV;
+      else *state = START_;
+      break;
+    case FLAG_RCV:
+      printf("Entered in FLAG_RCV\n");
+      if( flag == FLAG) *state = FLAG_RCV;
+      else if( flag == A_SR ) *state = A_RCV;
+      else *state = START_;
+      break;
+    case A_RCV:
+      printf("Entered in A_RCV\n");
+      if( flag == FLAG ) *state = FLAG_RCV;
+      else if( (flag == C_SET && id == RECEIVERID) || (flag = C_UA && id == SENDERID) ) *state = C_RCV;
+      else *state = START_;
+      break;
+    case C_RCV:
+      printf("Entered in C_RCV\n");
+      if( flag == FLAG ) *state = FLAG_RCV;
+      else if( (flag == BCC(A_SR,C_SET) && id == RECEIVERID) || (flag == BCC(A_SR, C_UA) && id == SENDERID) ) *state = BCC_OK;
+      else *state = START_;
+      break;
+    case BCC_OK:
+      printf("Entered in BCC_OK\n");
+      if( flag == FLAG ) *state = STOP_;
+      else *state = START_;
+      break;
+    default:
+      printf("Default statement reached\n");
+      break;
+    }
 }
+
+volatile int STOP = FALSE;
 
 int main(int argc, char **argv)
 {
   int fd, res;
   struct termios oldtio, newtio;
   char buf[255];
-
-  int i;
 
   if ((argc < 2) ||
       ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
@@ -92,64 +115,46 @@ int main(int argc, char **argv)
 
   printf("New termios structure set\n");
 
-  //fgets(buf,255,stdin);
 
-  char transmmiter_trame[5] = {FLAG, A_SR, C_SET, BCC(A_SR,C_SET), FLAG};
-
-
-  res = write(fd, transmmiter_trame, 5);
-  if( res == -1 ){
-    printf("Error writing to fd\n");
-    exit(1);
-  }
-
-  printf("%d bytes written\n", res);
-
-  printf("Receiving info from serial port\n");
-
+  MACHINE_STATE receiver_state = START_;
   char c;
-  int res2 = 0;
-  MACHINE_STATE senderState = START_;
 
   while (STOP == FALSE){
-    if( conta == 3 ){
-      printf("Communication failed\n");
-      break;
-    }
+    res = read(fd, &c, 1);
 
-    if( flag ){
-      if( write(fd, transmmiter_trame, 5) == -1 ){
-        printf("Error writing to fd\n");
-        exit(1);
-      }
-      flag = 0;
-      alarm(3);
-    }
-    
-
-    if( res2 == -1 ){
+    if( res == -1 ){
       printf("Error reading from buffer\n");
       exit(1);
     }
 
+    printf("Trame received (receptor)-> %02x\n", c);
 
-    printf("Trame received (emissor)-> %02x\n",c);
+    updateStateMachine(&receiver_state, RECEIVERID, c);
 
-    updateStateMachine(&senderState, SENDERID, c);
+    if ( receiver_state == STOP_ ) {
+      STOP = TRUE;
+    }
 
-    if (senderState == STOP_) STOP = TRUE;
   }
 
 
-  /* Aguardar um pouco que esteja escrito tudo antes de mudar
-    a config do terminal.  */
+  printf("Sending the string to emissor\n");
+
+  char receiver_trame[5] = {FLAG, A_SR, C_UA, BCC(A_SR,C_UA), FLAG};
+
+  int res_w = write(fd,receiver_trame,5);
+  if( res_w == -1 ){
+    printf("Error writing to serial port\n");
+    exit(1);
+  }
+  printf("Bytes writen to fd: %d\n",res_w);
+  printf("Message sent successfully\n");
+
+
+
   sleep(1);
-  if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
-  {
-    perror("tcsetattr");
-    exit(-1);
-  }
 
+  tcsetattr(fd, TCSANOW, &oldtio);
   close(fd);
   return 0;
 }
