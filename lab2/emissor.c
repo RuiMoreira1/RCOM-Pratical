@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
-#include "macros.h"
+#include "stateMachine.h"
 
 
 #include <string.h>
@@ -22,6 +22,7 @@
 
 volatile int STOP = FALSE;
 
+MACHINE_STATE senderState;
 
 int main(int argc, char **argv)
 {
@@ -82,23 +83,21 @@ int main(int argc, char **argv)
   }
 
   printf("New termios structure set\n");
-  printf("Message to be sent: ");
 
-  fgets(buf,255,stdin);
+  //fgets(buf,255,stdin);
 
-  printf("\nResult->%s",buf);
+  char transmmiter_trame[6] = {FLAG, A_SR, C_SET, BCC(A_SR,C_SET), FLAG, '\0'};
 
-  res = write(fd, buf, sizeof(buf));
+
+  res = write(fd, transmmiter_trame, 6);
   printf("%d bytes written\n", res);
-
-  char transmmiter_trame[5] = {FLAG, A_SR, C_SET, BCC(A_SR,C_SET), FLAG};
 
   printf("Receiving info from serial port\n");
 
   char c;
   int res2 = 0;
-  int loopVar = 0;
-  char newBuf[255];
+
+
   while (STOP == FALSE){
     res2 = read(fd, &c, 1);
 
@@ -107,12 +106,11 @@ int main(int argc, char **argv)
       exit(1);
     }
 
-    newBuf[loopVar++] = c;
-    if (c == '\0')
-      STOP = TRUE;
+    printf("Trame received (emissor)-> %02x\n",c);
+
+    if (c == '\0') STOP = TRUE;
   }
 
-  printf("Received-> %s\n",newBuf);
 
   /* Aguardar um pouco que esteja escrito tudo antes de mudar
     a config do terminal.  */

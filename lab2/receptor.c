@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
-#include "macros.h"
+#include "stateMachine.h"
 
 
 #include <string.h>
@@ -19,6 +19,7 @@
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
+
 
 volatile int STOP = FALSE;
 
@@ -81,34 +82,44 @@ int main(int argc, char **argv)
   printf("New termios structure set\n");
 
 
-
+  MACHINE_STATE state = START_;
   char c;
-  int loopVar = 0;
+  int bytes_received = 0;
   while (STOP == FALSE){
     res = read(fd, &c, 1);
+    bytes_received++;
+
 
     if( res == -1 ){
       printf("Error reading from buffer\n");
       exit(1);
     }
 
-    buf[loopVar++] = c;
-    if (c == '\0')
+    printf("Trame received (receptor)-> %02x\n", c);
+
+    updateStateMachine(state, 1, c);
+
+    if (state == STOP_ ) {
       STOP = TRUE;
+    }
+
   }
 
-  printf("Received from buffer-> %s", buf);
+  printf("Bytes received from sender: %d\n",bytes_received);
   printf("Sending the string to emissor\n");
 
+  char receiver_trame[6] = {FLAG, A_SR, C_UA, BCC(A_SR,C_UA), FLAG, '\0'};
+
   int res_w;
-  res_w = write(fd,buf,sizeof(buf));
+  res_w = write(fd,receiver_trame,6);
   if( res_w == -1 ){
     printf("Error writing to serial port\n");
     exit(1);
   }
+  printf("Bytes writen to fd: %d\n",res_w);
   printf("Message sent successfully\n");
 
-  char receiver_trame[5] = {FLAG, A_SR, C_UA, BCC(A_SR,C_UA), FLAG};
+
 
   sleep(1);
 

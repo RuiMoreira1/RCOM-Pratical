@@ -1,6 +1,10 @@
 #ifndef MACROS_N
 #define MACROS_h
 
+#define SENDERID 1
+#define RECEIVERID 0
+
+
 #define BIT(n) 1 << n
 
 #define FLAG 0x7E
