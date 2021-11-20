@@ -9,6 +9,7 @@
 #include <termios.h>
 #include <stdio.h>
 #include "stateMachine.h"
+#include "sender.h"
 
 
 #include <string.h>
@@ -20,50 +21,44 @@
 #define FALSE 0
 #define TRUE 1
 
-volatile int STOP = FALSE;
+volatile int STOP_RUNNING = FALSE;
 
 MACHINE_STATE senderState;
 
 int conta = 0, flag = 1;
 
-void atende(){
-	printf("alarme # %d\n", conta+1);
-	flag=1;
-	conta++;
+struct termios oldtio;
+
+
+void answerAlarm(){
+	flag = 1; conta++;
 }
 
-int main(int argc, char **argv)
-{
-  int fd, res;
-  struct termios oldtio, newtio;
-  char buf[255];
+void resetAlarmFlags(){
+	flag = 1; conta = 0;
+}
 
-  int i;
+int openSender(){
+	int fd;
+	struct termios newtio;
 
-  if ((argc < 2) ||
-      ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
-       (strcmp("/dev/ttyS11", argv[1]) != 0)))
-  {
-    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS11\n");
-    exit(1);
-  }
 
-  /*
+	(void)signal(SIGALARM, answerAlarm); /*Setup alarm for checking interval of non-response by the receiver*/
+
+	/*
     Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.
   */
 
   fd = open(argv[1], O_RDWR | O_NOCTTY);
-  if (fd < 0)
-  {
+  if (fd < 0){
     perror(argv[1]);
-    exit(-1);
+    exit(ERROR);
   }
 
-  if (tcgetattr(fd, &oldtio) == -1)
-  { /* save current port settings */
+  if (tcgetattr(fd, &oldtio) == -1){ /* save current port settings */
     perror("tcgetattr");
-    exit(-1);
+    exit(ERROR);
   }
 
   bzero(&newtio, sizeof(newtio));
@@ -74,83 +69,28 @@ int main(int argc, char **argv)
   /* set input mode (non-canonical, no echo,...) */
   newtio.c_lflag = 0;
 
-  newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
-  newtio.c_cc[VMIN] = 5;  /* blocking read until 5 chars received */
+  newtio.c_cc[VTIME] = 1; /* unblocks after 0.1s and after 1 char is read */
+  newtio.c_cc[VMIN] = 0;
 
-  /*
-    VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
-    leitura do(s) pr�ximo(s) caracter(es)
-  */
 
   tcflush(fd, TCIOFLUSH);
 
   if (tcsetattr(fd, TCSANOW, &newtio) == -1)
   {
     perror("tcsetattr");
-    exit(-1);
+    exit(ERROR);
   }
 
-  printf("New termios structure set\n");
+	if( sendSetFrame < 0 ) return ERROR;
 
-  //fgets(buf,255,stdin);
-
-  char transmmiter_trame[5] = {FLAG, A_SR, C_SET, BCC(A_SR,C_SET), FLAG};
-
-
-  res = write(fd, transmmiter_trame, 5);
-  if( res == -1 ){
-    printf("Error writing to fd\n");
-    exit(1);
-  }
-
-  printf("%d bytes written\n", res);
-
-  printf("Receiving info from serial port\n");
-
-  char c;
-  int res2 = 0;
-  MACHINE_STATE senderState = START_;
-
-  while (STOP == FALSE){
-    if( conta == 3 ){
-      printf("Communication failed\n");
-      break;
-    }
-
-    if( flag ){
-      if( write(fd, transmmiter_trame, 5) == -1 ){
-        printf("Error writing to fd\n");
-        exit(1);
-      }
-      flag = 0;
-      alarm(3);
-    }
-
-    res2 = read(fd, &c, 1);
-
-    if( res2 == -1 ){
-      printf("Error reading from buffer\n");
-      exit(1);
-    }
+  return fd;
+}
 
 
-    printf("Trame received (emissor)-> %02x\n",c);
+int sendSetFrame(){
+		resetAlarmFlags(); /*Upon sending the SET FRAME reset the alarm flags, upon checking for receiver timeout*/
 
-    updateStateMachine(&senderState, SENDERID, c);
+		char setFrame[5] = {FLAG, A_SR, C_SET, BCC(A_SR,C_SET),FLAG};
 
-    if (senderState == STOP_) STOP = TRUE;
-  }
-
-
-  /* Aguardar um pouco que esteja escrito tudo antes de mudar
-    a config do terminal.  */
-  sleep(1);
-  if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
-  {
-    perror("tcsetattr");
-    exit(-1);
-  }
-
-  close(fd);
-  return 0;
+		while(sender)
 }

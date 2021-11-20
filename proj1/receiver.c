@@ -9,6 +9,7 @@
 #include <termios.h>
 #include <stdio.h>
 #include "stateMachine.h"
+#include "receiver.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -19,43 +20,8 @@
 #define FALSE 0
 #define TRUE 1
 
-void updateState(MACHINE_STATE *state, int id, char flag){
-  switch(*state){
-    case START_:
-      printf("Entered in START_\n");
-      if( flag == FLAG ) *state = FLAG_RCV;
-      else *state = START_;
-      break;
-    case FLAG_RCV:
-      printf("Entered in FLAG_RCV\n");
-      if( flag == FLAG) *state = FLAG_RCV;
-      else if( flag == A_SR ) *state = A_RCV;
-      else *state = START_;
-      break;
-    case A_RCV:
-      printf("Entered in A_RCV\n");
-      if( flag == FLAG ) *state = FLAG_RCV;
-      else if( (flag == C_SET && id == RECEIVERID) || (flag = C_UA && id == SENDERID) ) *state = C_RCV;
-      else *state = START_;
-      break;
-    case C_RCV:
-      printf("Entered in C_RCV\n");
-      if( flag == FLAG ) *state = FLAG_RCV;
-      else if( (flag == BCC(A_SR,C_SET) && id == RECEIVERID) || (flag == BCC(A_SR, C_UA) && id == SENDERID) ) *state = BCC_OK;
-      else *state = START_;
-      break;
-    case BCC_OK:
-      printf("Entered in BCC_OK\n");
-      if( flag == FLAG ) *state = STOP_;
-      else *state = START_;
-      break;
-    default:
-      printf("Default statement reached\n");
-      break;
-    }
-}
 
-volatile int STOP = FALSE;
+volatile int STOP_RUNNING = FALSE;
 
 int main(int argc, char **argv)
 {
@@ -119,7 +85,7 @@ int main(int argc, char **argv)
   MACHINE_STATE receiver_state = START_;
   char c;
 
-  while (STOP == FALSE){
+  while (STOP_RUNNING == FALSE){
     res = read(fd, &c, 1);
 
     if( res == -1 ){
@@ -132,7 +98,7 @@ int main(int argc, char **argv)
     updateStateMachine(&receiver_state, RECEIVERID, c);
 
     if ( receiver_state == STOP_ ) {
-      STOP = TRUE;
+      STOP_RUNNING = TRUE;
     }
 
   }
