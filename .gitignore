@@ -1,4 +1,4 @@
-emissor
-receptor
+receiver
+sender
 *.o
 *.d

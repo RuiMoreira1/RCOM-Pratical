@@ -8,7 +8,6 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
-#include "stateMachine.h"
 #include "receiver.h"
 
 #include <string.h>
@@ -20,39 +19,26 @@
 #define FALSE 0
 #define TRUE 1
 
-
 volatile int STOP_RUNNING = FALSE;
 
-int main(int argc, char **argv)
-{
-  int fd, res;
-  struct termios oldtio, newtio;
-  char buf[255];
+int r = 1;
 
-  if ((argc < 2) ||
-      ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
-       (strcmp("/dev/ttyS11", argv[1]) != 0)))
-  {
-    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS11\n");
-    exit(1);
+struct termios oldtiosreceiver;
+
+int openReceiver(char filename[]){
+  int fd;
+
+  struct termios newtio;
+
+  fd = open(filename, O_RDWR | O_NOCTTY);
+  if (fd < 0){
+    perror(filename);
+    return ERROR;
   }
 
-  /*
-    Open serial port device for reading and writing and not as controlling tty
-    because we don't want to get killed if linenoise sends CTRL-C.
-  */
-
-  fd = open(argv[1], O_RDWR | O_NOCTTY);
-  if (fd < 0)
-  {
-    perror(argv[1]);
-    exit(-1);
-  }
-
-  if (tcgetattr(fd, &oldtio) == -1)
-  { /* save current port settings */
+  if (tcgetattr(fd, &oldtiosreceiver) == -1){ /* save current port settings */
     perror("tcgetattr");
-    exit(-1);
+    return ERROR;
   }
 
   bzero(&newtio, sizeof(newtio));
@@ -64,7 +50,7 @@ int main(int argc, char **argv)
   newtio.c_lflag = 0;
 
   newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
-  newtio.c_cc[VMIN] = 5;  /* blocking read until 5 chars received */
+  newtio.c_cc[VMIN] = 1;  /* reading 1 byte at time */
 
   /*
     VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
@@ -73,54 +59,49 @@ int main(int argc, char **argv)
 
   tcflush(fd, TCIOFLUSH);
 
-  if (tcsetattr(fd, TCSANOW, &newtio) == -1)
-  {
+  if (tcsetattr(fd, TCSANOW, &newtio) == -1){
     perror("tcsetattr");
-    exit(-1);
+    return ERROR;
   }
 
-  printf("New termios structure set\n");
+  if( receiveSetFrame(fd) < 0 ) return ERROR;
+
+  return fd;
+}
 
 
-  MACHINE_STATE receiver_state = START_;
-  char c;
+int receiveSetFrame( int fd ){
+  char byte;
+  MACHINE_STATE receiverState = START_;
 
-  while (STOP_RUNNING == FALSE){
-    res = read(fd, &c, 1);
-
-    if( res == -1 ){
-      printf("Error reading from buffer\n");
-      exit(1);
-    }
-
-    printf("Trame received (receptor)-> %02x\n", c);
-
-    updateStateMachine(&receiver_state, RECEIVERID, c);
-
-    if ( receiver_state == STOP_ ) {
-      STOP_RUNNING = TRUE;
-    }
+  while( receiverState != STOP_){
+    if( checkSupervisionFrame(&receiverState, fd, A_SR, C_SET, NULL) < 0 ) return ERROR;  /*Check if set frame was read correctly*/
 
   }
+  if( DEBUG ) printf("Frame Sucessfully read from receiver\n");
+
+  /* Send UA response to Sender */
+
+  if( sendSupervisionFrame(fd, A_SR, C_UA) < 0 ) return ERROR;
+
+  return SUCESS;
+}
 
 
-  printf("Sending the string to emissor\n");
 
-  char receiver_trame[5] = {FLAG, A_SR, C_UA, BCC(A_SR,C_UA), FLAG};
-
-  int res_w = write(fd,receiver_trame,5);
-  if( res_w == -1 ){
-    printf("Error writing to serial port\n");
+int main(int argc, char **argv)
+{
+  if ((argc < 2) ||
+      ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
+       (strcmp("/dev/ttyS11", argv[1]) != 0)))
+  {
+    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS11\n");
     exit(1);
   }
-  printf("Bytes writen to fd: %d\n",res_w);
-  printf("Message sent successfully\n");
+
+  printf("Running\n");
+
+  openReceiver(argv[1]);
 
 
-
-  sleep(1);
-
-  tcsetattr(fd, TCSANOW, &oldtio);
-  close(fd);
-  return 0;
 }
