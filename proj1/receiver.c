@@ -127,7 +127,10 @@ int dataDeStuffing(char *stuffedBuffer, int stuffedBufferSize, char *buffer, cha
       char nextByte = stuffedBuffer[++i];
       if( nextByte == FLAG_ESCAPE_XOR ) destuffedBuffer[temp++] = FLAG;
       else if( nextByte == ESCAPE_XOR ) destuffedBuffer[temp++] = ESCAPE;
-      else fprintf(stderr,"Escape byte violation\n");
+      else {
+        fprintf(stderr,"Escape byte violation\n");
+        return ERROR;
+      }
     }
     else destuffedBuffer[temp++] = stuffedBuffer[i];
   }
