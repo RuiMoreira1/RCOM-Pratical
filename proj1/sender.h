@@ -62,7 +62,7 @@ int senderDisc(int fd);
 int dataStuffing(char* buffer, int dataSize, char BCC2, char* stuffedBuffer);
 
 /**
- * @brief Sends a Frame with the data stuffed to the other side of the serial Port (slide 14)
+ * @brief Sends a Frame with the data stuffed to the other side of the serial Port (slide 14 && 7)
  *
  * @param  fd                       file descriptor of the serial port
  * @param  buffer                   data to be stuffed and then sent
