@@ -55,7 +55,7 @@ int dataDeStuffing(char *stuffedBuffer, int stuffedBufferSize, char *buffer, cha
  * @param  stuffedData               buffer containing stuffed data
  * @return            buffer size upon success, ERROR otherwise
  */
-int receivedStuffedData(int fd, char *stuffedData);
+int receivedStuffedData(int fd, char *buffer);
 
 //void receivedStuffedDataSM(MACHINE_STATE *state, )
 

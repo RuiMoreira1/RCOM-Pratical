@@ -4,7 +4,7 @@
 int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE, char* reject){
   int isRejected; char frame_byte;
 
-  if( getBytefromFd(fd, &frame_byte) < 0 ) return ERROR;
+  if( getBytefromFd(fd, &frame_byte) == ERROR ) return ERROR;
 
   switch(*state){
     case START_:
@@ -20,8 +20,8 @@ int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE
       else state = START_;
       break;
     case A_RCV:
-      if( reject != NULL && frame_byte == *reject ) isRejected = 1;
       if (DEBUG == 1) fprintf(stdout,"Entered in A_RCV\n");
+      if( reject != NULL && frame_byte == *reject ) isRejected = 1;
       if( frame_byte == FLAG ) *state = FLAG_RCV;
       else if( frame_byte == C_BYTE || isRejected ) *state = C_RCV;
       else *state = START_;

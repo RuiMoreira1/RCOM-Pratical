@@ -144,8 +144,80 @@ int dataDeStuffing(char *stuffedBuffer, int stuffedBufferSize, char *buffer, cha
 }
 
 
-int receivedStuffedData(int fd, char *stuffedData){
+int receivedStuffedData(int fd, char *buffer){
+  MACHINE_STATE state = START_;
 
+  char stuffedBuffer[STUFF_DATA_MAX];
+
+  int isRepeated, bufferSize, index;
+
+  char frame_byte, receivedAdd, repeatedCtrl = C_FRAME_I(r), ctrl = C_FRAME_I(1-r), receivedCtrl, calcBCC, bcc2, calcBCC2;
+
+
+  while(state != STOP_){
+    if(getBytefromFd(fd, &frame_byte) == ERROR){
+      return ERROR;
+    }
+
+    switch (state) {
+      case START_:
+        if (DEBUG == 1) fprintf(stdout,"Entered in START_\n");
+        if( frame_byte == FLAG ) state = FLAG_RCV;
+        else state = START_;
+        break;
+      case FLAG_RCV:
+        if (DEBUG == 1) fprintf(stdout,"Entered in FLAG_RCV\n");
+        if( frame_byte == FLAG) return SUCCESS;
+        else if( frame_byte == A_SR ) {
+          state = A_RCV;
+          isRepeated = 0;
+          receivedAdd = frame_byte;
+        }
+        else state = START_;
+        break;
+      case A_RCV:
+        if (DEBUG == 1) fprintf(stdout,"Entered in A_RCV\n");
+        if( frame_byte == repeatedCtrl ) isRepeated = 1;
+        if( frame_byte == FLAG ) state = FLAG_RCV;
+        else if( frame_byte == ctrl || isRepeated ) {
+          state = C_RCV;
+          receivedCtrl = frame_byte;
+          calcBCC = BCC(receivedCtrl,receivedAdd);
+        }
+        else state = START_;
+        break;
+      case C_RCV:
+        if (DEBUG == 1) fprintf(stdout,"Entered in C_RCV\n");
+        if( frame_byte == FLAG ) state = FLAG_RCV;
+        else if( frame_byte == calcBCC ) {
+          state = BCC_OK;
+          index = 0;
+        }
+        else state = START_;
+        break;
+      case BCC_OK:
+        if (DEBUG == 1) fprintf(stdout,"Entered in BCC_OK\n");
+        if( index >= STUFF_DATA_MAX ) state = START_;
+        else if( frame_byte == FLAG ) {
+          bufferSize = dataDeStuffing(stuffedBuffer, index, buffer, &bcc2);
+          calcBCC2 = createBCC2(buffer, bufferSize);
+
+          if( isRepeated ){
+
+          }
+
+
+          state = STOP_;
+        }
+        else state = START_;
+        break;
+      default:
+        if (DEBUG == 1) fprintf(stdout,"Default statement reached\n");
+        break;
+      }
+
+      return SUCCESS;
+  }
 }
 
 
@@ -153,6 +225,7 @@ int receivedStuffedData(int fd, char *stuffedData){
 
 int main(int argc, char **argv)
 {
+  //freopen("output.txt","a+", stdout); /* STDOUT to file */
   if ((argc < 2) ||
       ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
        (strcmp("/dev/ttyS11", argv[1]) != 0)))
