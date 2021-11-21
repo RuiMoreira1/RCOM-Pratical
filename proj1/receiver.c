@@ -78,7 +78,7 @@ int receiveSetFrame( int fd ){
     if( checkSupervisionFrame(&receiverState, fd, A_SR, C_SET, NULL) < 0 ) return ERROR;  /*Check if set frame was read correctly*/
 
   }
-  if( DEBUG ) printf("Frame Sucessfully read from receiver\n");
+  if( DEBUG ) fprintf(stdout,"Frame Sucessfully read from receiver\n");
 
   /* Send UA response to Sender */
 
@@ -100,14 +100,14 @@ int closeReceiver(int fd){
 int receiverDisc(int fd){
   MACHINE_STATE receiverState = START_;
 
-  if(DEBUG) printf("Receiving DISC\n");
+  if(DEBUG) fprintf(stdout,"Receiving DISC\n");
   while( receiverState != STOP_ ) {
     if( checkSupervisionFrame(&receiverState, fd, A_SR, C_DISC, NULL) == ERROR) return ERROR;
   }
 
   if( sendSupervisionFrame(fd, A_SR, C_DISC) == ERROR) return ERROR;
 
-  if(DEBUG) printf("Receiving UA\n");
+  if(DEBUG) fprintf(stdout,"Receiving UA\n");
   receiverState = START_;
   while( receiverState != STOP_ ) {
     if( checkSupervisionFrame(&receiverState, fd, A_SR, C_UA, NULL) == ERROR) return ERROR;
@@ -154,11 +154,11 @@ int main(int argc, char **argv)
       ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
        (strcmp("/dev/ttyS11", argv[1]) != 0)))
   {
-    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS11\n");
+    fprintf(stdout,"Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS11\n");
     exit(1);
   }
 
-  printf("Running\n");
+  fprintf(stdout,"Running\n");
 
   int fd = openReceiver(argv[1]);
 
@@ -166,12 +166,12 @@ int main(int argc, char **argv)
   char buff[7];
   char bccc[1];
   int size = dataDeStuffing(stuff,9,buff,bccc);
-  printf("Leaving data stuffing\n");
+  fprintf(stdout,"Leaving data stuffing\n");
 
-  for(int i = 0; i < size; i++) printf("Byte -> %02x\n",buff[i]);
-  printf("BCC2 -> %02x\n", bccc[0]);
+  for(int i = 0; i < size; i++) fprintf(stdout,"Byte -> %02x\n",buff[i]);
+  fprintf(stdout,"BCC2 -> %02x\n", bccc[0]);
 
-  printf("Sleeping\n");
+  fprintf(stdout,"Sleeping\n");
 
   closeReceiver(fd);
 

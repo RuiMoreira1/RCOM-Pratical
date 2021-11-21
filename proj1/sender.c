@@ -114,7 +114,7 @@ int sendSetFrame(int fd){
 			if( checkSupervisionFrame(&setState, fd, A_SR, C_UA, NULL) == ERROR) return ERROR;  /* Getting information byte by byte */
 		}
 
-		if(DEBUG) printf("Sucessfully got UA response from receiver\n");
+		if(DEBUG) fprintf(stdout,"Sucessfully got UA response from receiver\n");
 
 		alarm(0); /* Disconnect alarm */
 
@@ -131,7 +131,7 @@ int senderDisc(int fd){
 
 	while( senderState != STOP_ ){
 		if( conta == 3 ){
-			printf("Communication between Receiver && Sender failed\n");
+			fprintf(stdout,"Communication between Receiver && Sender failed\n");
 			return ERROR;
 		}
 
@@ -216,7 +216,7 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 	char BCC2 = createBCC2(buffer, bufferSize);
 
 	if( BCC2 == '\0' ) {
-		if(DEBUG) printf("Error generating BCC2, data field problem\n");
+		if(DEBUG) fprintf(stdout,"Error generating BCC2, data field problem\n");
 		return ERROR;
 	}
 
@@ -230,7 +230,7 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 
 	while( stuffedBufferState != STOP_ ){
 		if( conta == 3 ){
-			printf("Communication between Receiver && Sender failed\n");
+			fprintf(stdout,"Communication between Receiver && Sender failed\n");
 			return ERROR;
 		}
 
@@ -286,23 +286,23 @@ int main(int argc, char **argv)
       ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
        (strcmp("/dev/ttyS11", argv[1]) != 0)))
   {
-    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS11\n");
+    fprintf(stdout,"Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS11\n");
     exit(1);
   }
 
-	printf("Sender active\n");
+	fprintf(stdout,"Sender active\n");
   int fd = openSender(argv[1]);
 
-	printf("Buffer stuffing test\n");
+	fprintf(stdout,"Buffer stuffing test\n");
 
 	char buffer[6] = {0x7d,0x01,0x02,0x03,0x04,0x05};
 	char stuffedBuffer[STUFF_DATA_MAX];
 	char BCC2 = 0x7e;
 	int size = dataStuffing(buffer, 6, BCC2, stuffedBuffer);
 
-	for(int i = 0; i <size; i++) printf("Byte -> %02x\n", stuffedBuffer[i]);
+	for(int i = 0; i <size; i++) fprintf(stdout,"Byte -> %02x\n", stuffedBuffer[i]);
 
-	printf("Closing\n");
+	fprintf(stdout,"Closing\n");
 
 	closeSender(fd);
 
