@@ -295,10 +295,10 @@ int main(int argc, char **argv)
 
 	printf("Buffer stuffing test\n");
 
-	char buffer[5] = {0x7d,0x08,0x09,0x10,0x11};
+	char buffer[6] = {0x7d,0x01,0x02,0x03,0x04,0x05};
 	char stuffedBuffer[STUFF_DATA_MAX];
-	char BCC2 = 0x7d;
-	int size = dataStuffing(buffer, 5, BCC2, stuffedBuffer);
+	char BCC2 = 0x7e;
+	int size = dataStuffing(buffer, 6, BCC2, stuffedBuffer);
 
 	for(int i = 0; i <size; i++) printf("Byte -> %02x\n", stuffedBuffer[i]);
 

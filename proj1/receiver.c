@@ -117,6 +117,36 @@ int receiverDisc(int fd){
 }
 
 
+int dataDeStuffing(char *stuffedBuffer, int stuffedBufferSize, char *buffer, char *BCC2){
+  char destuffedBuffer[MAX_DATA_SIZE+1]; /* +1 because of trailing '\0' char */
+
+  int temp = 0; /* Auxiliary int */
+
+  for( int i = 0; i < stuffedBufferSize; i++){
+    if( stuffedBuffer[i] == ESCAPE ){
+      char nextByte = stuffedBuffer[++i];
+      if( nextByte == FLAG_ESCAPE_XOR ) destuffedBuffer[temp++] = FLAG;
+      else if( nextByte == ESCAPE_XOR ) destuffedBuffer[temp++] = ESCAPE;
+      else perror("Escape byte violation\n");
+    }
+    else destuffedBuffer[temp++] = stuffedBuffer[i];
+  }
+
+
+  *BCC2 = destuffedBuffer[--temp];
+
+  for(int j = 0; j < temp; j++ ) buffer[j] = destuffedBuffer[j];
+
+  return temp;
+}
+
+
+int receivedStuffedData(int fd, char *stuffedData){
+
+}
+
+
+
 
 int main(int argc, char **argv)
 {
@@ -131,6 +161,15 @@ int main(int argc, char **argv)
   printf("Running\n");
 
   int fd = openReceiver(argv[1]);
+
+  char stuff[9] = {0x7d,0x5d, 0x01,0x02,0x03, 0x04, 0x05, 0x7d, 0x5e};
+  char buff[6];
+  char bccc[1];
+  dataDeStuffing(stuff,9,buff,bccc);
+  printf("Leaving data stuffing\n");
+
+  for(int i = 0; i < 7; i++) printf("Byte -> %02x\n",buff[i]);
+  printf("BCC2 -> %02x\n", bccc[0]);
 
   printf("Sleeping\n");
 
