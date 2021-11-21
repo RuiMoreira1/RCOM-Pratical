@@ -163,12 +163,12 @@ int main(int argc, char **argv)
   int fd = openReceiver(argv[1]);
 
   char stuff[9] = {0x7d,0x5d, 0x01,0x02,0x03, 0x04, 0x05, 0x7d, 0x5e};
-  char buff[6];
+  char buff[7];
   char bccc[1];
-  dataDeStuffing(stuff,9,buff,bccc);
+  int size = dataDeStuffing(stuff,9,buff,bccc);
   printf("Leaving data stuffing\n");
 
-  for(int i = 0; i < 7; i++) printf("Byte -> %02x\n",buff[i]);
+  for(int i = 0; i < size; i++) printf("Byte -> %02x\n",buff[i]);
   printf("BCC2 -> %02x\n", bccc[0]);
 
   printf("Sleeping\n");
