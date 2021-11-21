@@ -22,4 +22,14 @@ int getBytefromFd(int fd, char *byte_to_be_read);
 
 int sendSupervisionFrame(int fd, char A_BYTE, char C_BYTE);
 
+/**
+ * @bried Create Information Trame BCC2, consisiting in a xor of all the data field
+ * bits, therefore creating BCC2
+ *
+ * @param  buffer                   Information camp
+ * @param  bufferSize               Information camp size
+ * @return            BCC2 upon success, '\0' otherwise
+ */
+char createBCC2(char *buffer, int bufferSize);
+
 #endif

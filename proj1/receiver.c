@@ -84,7 +84,7 @@ int receiveSetFrame( int fd ){
 
   if( sendSupervisionFrame(fd, A_SR, C_UA) < 0 ) return ERROR;
 
-  return SUCESS;
+  return SUCCESS;
 }
 
 int closeReceiver(int fd){
@@ -94,7 +94,7 @@ int closeReceiver(int fd){
 
   tcsetattr(fd,TCSANOW,&oldtiosreceiver);
   close(fd);
-  return 0;
+  return SUCCESS;
 }
 
 int receiverDisc(int fd){
@@ -113,7 +113,7 @@ int receiverDisc(int fd){
     if( checkSupervisionFrame(&receiverState, fd, A_SR, C_UA, NULL) == ERROR) return ERROR;
   }
 
-  return SUCESS;
+  return SUCCESS;
 }
 
 

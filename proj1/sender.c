@@ -25,7 +25,7 @@ volatile int STOP_RUNNING = FALSE;
 
 MACHINE_STATE senderState;
 
-int conta = 0, flag = 1;
+int conta = 0, flag = 1, s = 0;
 
 struct termios oldtio;
 
@@ -118,8 +118,9 @@ int sendSetFrame(int fd){
 
 		alarm(0); /* Disconnect alarm */
 
-		return SUCESS;
+		return SUCCESS;
 }
+
 
 int senderDisc(int fd){
 	resetAlarmFlags();  /* Reset alarm flags */
@@ -137,7 +138,7 @@ int senderDisc(int fd){
 		if( flag ){
 			flag = 0;
 			if( write(fd, frame, 5) == -1 ){
-				perror("Error writing to Serial Port DISC trame\n");
+				perror("Error writing to Serial Port DISC frame\n");
 				return ERROR;
 			}
 			senderState = START_;
@@ -151,9 +152,10 @@ int senderDisc(int fd){
 
 	if(sendSupervisionFrame(fd, A_SR, C_UA) == ERROR) return ERROR;
 
-	return SUCESS;
+	return SUCCESS;
 
 }
+
 
 int closeSender(int fd){
 	if( senderDisc(fd) == ERROR ) return ERROR;
@@ -163,11 +165,119 @@ int closeSender(int fd){
 	if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
   {
     perror("tcsetattr");
-    exit(-1);
+    return ERROR;
   }
   close(fd);
-  return 0;
+  return SUCCESS;
 }
+
+
+int dataStuffing(char* buffer, int dataSize, char BCC2, char* stuffedBuffer){
+	int temp = 0; /*Temporary variable used to insert the stuffed data inside the buffer and then used to return has the stuffedBuffer size*/
+
+	/*Data Stuffing before BCC2 */
+	for(int i = 0; i < dataSize; i++){
+		if( buffer[i] == FLAG ){
+			stuffedBuffer[temp++] = ESCAPE;
+			stuffedBuffer[temp++] = FLAG_ESCAPE_XOR;
+		}
+		else if( buffer[i] == ESCAPE ){
+			stuffedBuffer[temp++] = ESCAPE;
+			stuffedBuffer[temp++] = ESCAPE_XOR;
+		}
+		else stuffedBuffer[temp++] = buffer[i];
+	}
+
+	/*BCC2 Stuffing*/
+	if( BCC2 == FLAG ){
+		stuffedBuffer[temp++] = ESCAPE;
+		stuffedBuffer[temp++] = FLAG_ESCAPE_XOR;
+	}
+	else if( BCC2 == ESCAPE ){
+		stuffedBuffer[temp++] = ESCAPE;
+		stuffedBuffer[temp++] = ESCAPE_XOR;
+	}
+	else stuffedBuffer[temp++] = BCC2;
+
+
+	return temp;
+}
+
+
+int sendStuffedFrame(int fd, char* buffer, int bufferSize){
+	resetAlarmFlags(); /* Resetting alarm variables to send stuffed byte */
+
+	if( bufferSize > MAX_DATA_SIZE ){
+		perror("Buffer Size exceeded the var(MAX_DATA_SIZE) value\n");
+		return ERROR;
+	}
+
+	char I_C_BYTE = C_FRAME_I(s);
+	char BCC2 = createBCC2(buffer, bufferSize);
+
+	if( BCC2 == '\0' ) {
+		if(DEBUG) printf("Error generating BCC2, data field problem\n");
+		return ERROR;
+	}
+
+	char frameH[4] = {FLAG, A_SR, I_C_BYTE, BCC(A_SR,I_C_BYTE)};
+	char frameT = FLAG;
+	char stuffedBuffer[STUFF_DATA_MAX];
+
+	int stuffedBufferSize = dataStuffing(buffer, bufferSize, BCC2, stuffedBuffer);
+
+	MACHINE_STATE stuffedBufferState = START_;
+
+	while( stuffedBufferState != STOP_ ){
+		if( conta == 3 ){
+			printf("Communication between Receiver && Sender failed\n");
+			return ERROR;
+		}
+
+		if( flag ){
+			flag = 0;
+
+			if( write(fd , frameH, 4) == ERROR ){
+				perror("Error writing to Serial Port Frame Header\n");
+				return ERROR;
+			}
+
+			if( write(fd, stuffedBuffer, stuffedBufferSize) == ERROR ){
+				perror("Error writing to Serial Port Stuffed Data\n");
+				return ERROR;
+			}
+
+			if( write(fd, &frameT, 1) == ERROR ){
+				perror("Error writing to Serial Port Frame Tail\n");
+				return ERROR;
+			}
+
+			stuffedBufferState = START_;
+			alarm(ALARM_INTERVAL);
+		}
+
+		char rejB = C_REJ(1-s);
+
+		int supervisionRes = checkSupervisionFrame(&stuffedBufferState, fd, A_SR, C_RR(1-s), &rejB );
+
+		if(  supervisionRes == ERROR){
+			perror("Erro receiving correct info from receiver\n");
+			return ERROR;
+		}
+		else if ( supervisionRes > 0){
+			flag = 1; conta++; /* Stuffed message wasn't acknowledged correctly resend frame */
+		}
+
+	}
+
+	s = 1-s;
+
+	alarm(0); /* Deactivate alarm message was sent and Acknowledgement was verified and validated correctly */
+
+	return bufferSize;
+}
+
+
 
 
 int main(int argc, char **argv)
@@ -183,9 +293,20 @@ int main(int argc, char **argv)
 	printf("Sender active\n");
   int fd = openSender(argv[1]);
 
+	printf("Buffer stuffing test\n");
+
+	char buffer[5] = {0x7d,0x08,0x09,0x10,0x11};
+	char stuffedBuffer[STUFF_DATA_MAX];
+	char BCC2 = 0x7d;
+	int size = dataStuffing(buffer, 5, BCC2, stuffedBuffer);
+
+	for(int i = 0; i <size; i++) printf("Byte -> %02x\n", stuffedBuffer[i]);
+
 	printf("Closing\n");
 
 	closeSender(fd);
+
+
 
 
 }

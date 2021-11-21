@@ -15,7 +15,7 @@ int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE
     case FLAG_RCV:
       isRejected = 0;
       if (DEBUG == 1) printf("Entered in FLAG_RCV\n");
-      if( frame_byte == FLAG) *state = FLAG_RCV;
+      if( frame_byte == FLAG) return SUCCESS;
       else if( frame_byte == A_BYTE ) *state = A_RCV;
       else state = START_;
       break;
@@ -42,7 +42,7 @@ int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE
       break;
     }
     if( *state == STOP_ && isRejected ) return 1;
-    return 0;
+    return SUCCESS;
 }
 
 
@@ -53,7 +53,7 @@ int getBytefromFd(int fd, char *byte_to_be_read){
     return ERROR;
   }
   if(DEBUG) printf("Byte read: %02x\n", *byte_to_be_read);
-  return SUCESS;
+  return SUCCESS;
 }
 
 
@@ -66,5 +66,21 @@ int sendSupervisionFrame(int fd, char A_BYTE, char C_BYTE){
     perror("Error writing to serial Port\n");
     return ERROR;
   }
-  return SUCESS;
+  return SUCCESS;
+}
+
+char createBCC2(char *buffer, int bufferSize){
+  if(sizeof(buffer) > 0){
+    char BCC2 = buffer[0];
+
+    for(int i = 1; i < bufferSize; i++){
+      BCC2 ^= buffer[i];
+    }
+
+    return BCC2;
+  }
+  else{
+    perror("Unable to create BCC2, buffer not allocated correclty\n");
+    return '\0';
+  }
 }
