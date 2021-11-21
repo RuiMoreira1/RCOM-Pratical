@@ -32,12 +32,12 @@ int openReceiver(char filename[]){
 
   fd = open(filename, O_RDWR | O_NOCTTY);
   if (fd < 0){
-    perror(filename);
+    fprintf(stderr,"%s",filename);
     return ERROR;
   }
 
   if (tcgetattr(fd, &oldtiosreceiver) == -1){ /* save current port settings */
-    perror("tcgetattr");
+    fprintf(stderr,"tcgetattr");
     return ERROR;
   }
 
@@ -60,7 +60,7 @@ int openReceiver(char filename[]){
   tcflush(fd, TCIOFLUSH);
 
   if (tcsetattr(fd, TCSANOW, &newtio) == -1){
-    perror("tcsetattr");
+    fprintf(stderr,"tcsetattr");
     return ERROR;
   }
 
@@ -127,7 +127,7 @@ int dataDeStuffing(char *stuffedBuffer, int stuffedBufferSize, char *buffer, cha
       char nextByte = stuffedBuffer[++i];
       if( nextByte == FLAG_ESCAPE_XOR ) destuffedBuffer[temp++] = FLAG;
       else if( nextByte == ESCAPE_XOR ) destuffedBuffer[temp++] = ESCAPE;
-      else perror("Escape byte violation\n");
+      else fprintf(stderr,"Escape byte violation\n");
     }
     else destuffedBuffer[temp++] = stuffedBuffer[i];
   }

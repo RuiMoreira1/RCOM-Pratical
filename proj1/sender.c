@@ -52,12 +52,12 @@ int openSender(char filename[]){
 
   fd = open(filename, O_RDWR | O_NOCTTY);
   if (fd < 0){
-    perror(filename);
+    fprintf(stderr,"%s",filename);
     return ERROR;
   }
 
   if (tcgetattr(fd, &oldtio) == -1){ /* save current port settings */
-    perror("tcgetattr");
+    fprintf(stderr,"tcgetattr");
     return ERROR;
   }
 
@@ -77,7 +77,7 @@ int openSender(char filename[]){
 
   if (tcsetattr(fd, TCSANOW, &newtio) == -1)
   {
-    perror("tcsetattr");
+    fprintf(stderr,"tcsetattr");
     return ERROR;
   }
 
@@ -97,14 +97,14 @@ int sendSetFrame(int fd){
 
 		while(setState != STOP_){
 			if( conta == 3 ){
-				perror("Communication between Receiver && Sender failed\n");
+				fprintf(stderr,"Communication between Receiver && Sender failed\n");
 				return ERROR;
 			}
 
 			if( flag ){
 				flag = 0; /* Disable message send flags */
 				if( write(fd, setFrame, 5) == -1 ){
-					perror("Error writing to Serial Port SET trame\n");
+					fprintf(stderr,"Error writing to Serial Port SET trame\n");
 					return ERROR;
 				}
 				setState = START_;
@@ -138,7 +138,7 @@ int senderDisc(int fd){
 		if( flag ){
 			flag = 0;
 			if( write(fd, frame, 5) == -1 ){
-				perror("Error writing to Serial Port DISC frame\n");
+				fprintf(stderr,"Error writing to Serial Port DISC frame\n");
 				return ERROR;
 			}
 			senderState = START_;
@@ -164,7 +164,7 @@ int closeSender(int fd){
 
 	if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
   {
-    perror("tcsetattr");
+    fprintf(stderr,"tcsetattr");
     return ERROR;
   }
   close(fd);
@@ -208,7 +208,7 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 	resetAlarmFlags(); /* Resetting alarm variables to send stuffed byte */
 
 	if( bufferSize > MAX_DATA_SIZE ){
-		perror("Buffer Size exceeded the var(MAX_DATA_SIZE) value\n");
+		fprintf(stderr,"Buffer Size exceeded the var(MAX_DATA_SIZE) value\n");
 		return ERROR;
 	}
 
@@ -238,17 +238,17 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 			flag = 0;
 
 			if( write(fd , frameH, 4) == ERROR ){
-				perror("Error writing to Serial Port Frame Header\n");
+				fprintf(stderr,"Error writing to Serial Port Frame Header\n");
 				return ERROR;
 			}
 
 			if( write(fd, stuffedBuffer, stuffedBufferSize) == ERROR ){
-				perror("Error writing to Serial Port Stuffed Data\n");
+				fprintf(stderr,"Error writing to Serial Port Stuffed Data\n");
 				return ERROR;
 			}
 
 			if( write(fd, &frameT, 1) == ERROR ){
-				perror("Error writing to Serial Port Frame Tail\n");
+				fprintf(stderr,"Error writing to Serial Port Frame Tail\n");
 				return ERROR;
 			}
 
@@ -256,12 +256,12 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 			alarm(ALARM_INTERVAL);
 		}
 
-		char rejB = C_REJ(1-s);
+		char rejB = C_REJ(s);
 
 		int supervisionRes = checkSupervisionFrame(&stuffedBufferState, fd, A_SR, C_RR(1-s), &rejB );
 
 		if(  supervisionRes == ERROR){
-			perror("Erro receiving correct info from receiver\n");
+			fprintf(stderr,"Erro receiving correct info from receiver\n");
 			return ERROR;
 		}
 		else if ( supervisionRes > 0){

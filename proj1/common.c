@@ -49,7 +49,7 @@ int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE
 int getBytefromFd(int fd, char *byte_to_be_read){
   int res = read(fd, byte_to_be_read, 1);
   if( res == ERROR){
-    perror("Error reading byte from fd\n");
+    fprintf(stderr,"Error reading byte from fd\n");
     return ERROR;
   }
   if(DEBUG) printf("Byte read: %02x\n", *byte_to_be_read);
@@ -63,7 +63,7 @@ int sendSupervisionFrame(int fd, char A_BYTE, char C_BYTE){
   int res = write(fd, frame, 5);
 
   if( res == ERROR ){
-    perror("Error writing to serial Port\n");
+    fprintf(stderr,"Error writing to serial Port\n");
     return ERROR;
   }
   return SUCCESS;
@@ -80,7 +80,7 @@ char createBCC2(char *buffer, int bufferSize){
     return BCC2;
   }
   else{
-    perror("Unable to create BCC2, buffer not allocated correclty\n");
+    fprintf(stderr,"Unable to create BCC2, buffer not allocated correclty\n");
     return '\0';
   }
 }
