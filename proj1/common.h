@@ -7,13 +7,16 @@
 typedef enum { START_, FLAG_RCV, A_RCV, C_RCV, BCC_OK, STOP_ } MACHINE_STATE;
 
 
-/*
- @brief State Machine for both the sender and the receiver
+/**
+ * @brief State Machine for checking I/S/U Frame responses
  *
- * @param *state - MACHINE_STATE enum, to update the state machine state, when receiving trame information
- * @param id - Receiver state MACHINE id -> 0 Sender state Machine id -> 1
- * @param flag - Flag received from the file descriptor
-*/
+ * @param  state                the current SM state, passed by reference so it can be updated
+ * @param  fd                   serial port file descriptor
+ * @param  A_BYTE               A field of I/S/U Frame
+ * @param  C_BYTE               A field of I/S/U Frame
+ * @param  reject               Negative Acknowledgement
+ * @return        SUCCESS upon success, ERROR otherwise
+ */
 int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE, char* reject);
 
 /**
