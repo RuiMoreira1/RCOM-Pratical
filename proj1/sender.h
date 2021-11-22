@@ -28,7 +28,7 @@ int openSender(char filename[]);
  * @brief Sending SET trame message, to setup the connection between Sender && Receiver, (slide 7 && 14)
  * expected to receive Unknow Acknowledgement from the Receiver
  *
- * @param  fd               [description]
+ * @param  fd               serial port file descriptor
  * @return  SUCCESS upon success, ERROR otherwise
  */
 int sendSetFrame(int fd);

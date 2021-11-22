@@ -17,7 +17,7 @@ int openReceiver(char filename[]);
  * send the UA response (slide 7 && 14)
  *
  * @param  fd               serial port file descriptor
- * @return    SUCCES upon success, ERROR otherwise
+ * @return    SUCCESS upon success, ERROR otherwise
  */
 int receiveSetFrame(int fd);
 
@@ -25,7 +25,7 @@ int receiveSetFrame(int fd);
  * @brief Closes the Receiver side of the serial port (slide 14)
  *
  * @param  fd               serial port file descriptor
- * @return    SUCCES upon success, ERROR otherwise
+ * @return    SUCCESS upon success, ERROR otherwise
  */
 int closeReceiver(int fd);
 
@@ -35,7 +35,7 @@ int closeReceiver(int fd);
  * acknowledges a UA frame, and consequently validates the frame (slide 14)
  *
  * @param  fd               serial port file descriptor
- * @return    SUCCES upon success, ERROR otherwise
+ * @return    SUCCESS upon success, ERROR otherwise
  */
 int receiverDisc(int fd);
 
