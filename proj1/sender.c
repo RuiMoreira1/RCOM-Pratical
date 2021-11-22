@@ -31,6 +31,7 @@ struct termios oldtio;
 
 
 void answerAlarm(){
+	fprintf(stdout, "Timeout\n");
 	flag = 1; conta++;
 }
 
