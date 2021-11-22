@@ -6,7 +6,7 @@
 #define SENDERID 1
 #define RECEIVERID 0
 
-#define DEBUG 1  /* Debug falg */
+#define DEBUG 0   /* Debug flag */
 
 
 #define BIT(n) 1 << n   /* Bit mask */
