@@ -34,9 +34,11 @@ void answerAlarm(){
 	flag = 1; conta++;
 }
 
+
 void resetAlarmFlags(){
 	flag = 1; conta = 0;
 }
+
 
 int openSender(char filename[]){
 	int fd;
@@ -88,37 +90,36 @@ int openSender(char filename[]){
 
 
 int sendSetFrame(int fd){
-		resetAlarmFlags(); /*Upon sending the SET FRAME reset the alarm flags, upon checking for receiver timeout*/
+	resetAlarmFlags(); /*Upon sending the SET FRAME reset the alarm flags, upon checking for receiver timeout*/
 
+	MACHINE_STATE setState = START_;
 
-		MACHINE_STATE setState = START_;
+	char setFrame[5] = {FLAG, A_SR, C_SET, BCC(A_SR,C_SET),FLAG};
 
-		char setFrame[5] = {FLAG, A_SR, C_SET, BCC(A_SR,C_SET),FLAG};
-
-		while(setState != STOP_){
-			if( conta == 3 ){
+	while(setState != STOP_){
+		if( conta == 3 ){
 				fprintf(stderr,"Communication between Receiver && Sender failed\n");
 				return ERROR;
-			}
-
-			if( flag ){
-				flag = 0; /* Disable message send flags */
-				if( write(fd, setFrame, 5) == -1 ){
-					fprintf(stderr,"Error writing to Serial Port SET trame\n");
-					return ERROR;
-				}
-				setState = START_;
-				alarm(ALARM_INTERVAL);
-			}
-
-			if( checkSupervisionFrame(&setState, fd, A_SR, C_UA, NULL) == ERROR) return ERROR;  /* Getting information byte by byte */
 		}
 
-		if(DEBUG) fprintf(stdout,"Sucessfully got UA response from receiver\n");
+		if( flag ){
+			flag = 0; /* Disable message send flags */
+			if( write(fd, setFrame, 5) == -1 ){
+				fprintf(stderr,"Error writing to Serial Port SET trame\n");
+				return ERROR;
+			}
+			setState = START_;
+			alarm(ALARM_INTERVAL);
+		}
 
-		alarm(0); /* Disconnect alarm */
+		if( checkSupervisionFrame(&setState, fd, A_SR, C_UA, NULL) == ERROR) return ERROR;  /* Getting information byte by byte */
+	}
 
-		return SUCCESS;
+	if(DEBUG) fprintf(stdout,"Sucessfully got UA response from receiver\n");
+
+	alarm(0); /* Disconnect alarm */
+
+	return SUCCESS;
 }
 
 
@@ -261,7 +262,7 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 		int supervisionRes = checkSupervisionFrame(&stuffedBufferState, fd, A_SR, C_RR(1-s), &rejB );
 
 		if(  supervisionRes == ERROR){
-			fprintf(stderr,"Erro receiving correct info from receiver\n");
+			fprintf(stderr,"Error receiving correct info from receiver\n");
 			return ERROR;
 		}
 		else if ( supervisionRes > 0){
@@ -276,8 +277,6 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 
 	return bufferSize;
 }
-
-
 
 
 int main(int argc, char **argv)
@@ -295,12 +294,12 @@ int main(int argc, char **argv)
   int fd = openSender(argv[1]);
 
 	fprintf(stdout,"Sending stuffed frame\n");
-	char buffer[7] = {0x7d,0x01,0x02,0x03,0x04,0x05, 0x7e};
+	char buffer[7] = {0x7e,0x01,0x02,0x03,0x04,0x05, 0x7d};
 	int sizeBuffer = sendStuffedFrame(fd, buffer, 7);
 	fprintf(stdout,"Out of stuffed frame\n");
 
 
-	/*fprintf(stdout,"Buffer stuffing test\n");
+/*	fprintf(stdout,"Buffer stuffing test\n");
 
 	char buffer[6] = {0x7d,0x01,0x02,0x03,0x04,0x05};
 	char stuffedBuffer[STUFF_DATA_MAX];
@@ -308,6 +307,8 @@ int main(int argc, char **argv)
 	int size = dataStuffing(buffer, 6, BCC2, stuffedBuffer);
 
 	for(int i = 0; i <size; i++) fprintf(stdout,"Byte -> %02x\n", stuffedBuffer[i]);*/
+
+
 
 	fprintf(stdout,"Closing\n");
 

@@ -4,7 +4,15 @@
 #include "macros.h"
 #include <stdio.h>
 
-typedef enum { START_, FLAG_RCV, A_RCV, C_RCV, BCC_OK, STOP_ } MACHINE_STATE;
+/*! State machine enumeration class */
+typedef enum {
+   START_,    /* Start state */
+   FLAG_RCV,  /* 0x7E is validated */
+   A_RCV,     /* A Field byte is validated*/
+   C_RCV,     /* C Field byte is validated */
+   BCC_OK,    /* BCC(A_FIELD, C_FIELD) byte is validated */
+   STOP_      /* Flags validated correctly */
+ } MACHINE_STATE;
 
 
 /**
