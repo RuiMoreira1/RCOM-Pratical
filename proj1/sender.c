@@ -52,12 +52,12 @@ int openSender(char filename[]){
 
   fd = open(filename, O_RDWR | O_NOCTTY);
   if (fd < 0){
-    fprintf(stderr,"%s",filename);
+    fprintf(stderr,"%s\n",filename);
     return ERROR;
   }
 
   if (tcgetattr(fd, &oldtio) == -1){ /* save current port settings */
-    fprintf(stderr,"tcgetattr");
+    fprintf(stderr,"tcgetattr\n");
     return ERROR;
   }
 
@@ -77,7 +77,7 @@ int openSender(char filename[]){
 
   if (tcsetattr(fd, TCSANOW, &newtio) == -1)
   {
-    fprintf(stderr,"tcsetattr");
+    fprintf(stderr,"tcsetattr\n");
     return ERROR;
   }
 
@@ -291,16 +291,23 @@ int main(int argc, char **argv)
   }
 
 	fprintf(stdout,"Sender active\n");
+
   int fd = openSender(argv[1]);
 
-	fprintf(stdout,"Buffer stuffing test\n");
+	fprintf(stdout,"Sending stuffed frame\n");
+	char buffer[7] = {0x7d,0x01,0x02,0x03,0x04,0x05, 0x7e};
+	int sizeBuffer = sendStuffedFrame(fd, buffer, 7);
+	fprintf(stdout,"Out of stuffed frame\n");
+
+
+	/*fprintf(stdout,"Buffer stuffing test\n");
 
 	char buffer[6] = {0x7d,0x01,0x02,0x03,0x04,0x05};
 	char stuffedBuffer[STUFF_DATA_MAX];
 	char BCC2 = 0x7e;
 	int size = dataStuffing(buffer, 6, BCC2, stuffedBuffer);
 
-	for(int i = 0; i <size; i++) fprintf(stdout,"Byte -> %02x\n", stuffedBuffer[i]);
+	for(int i = 0; i <size; i++) fprintf(stdout,"Byte -> %02x\n", stuffedBuffer[i]);*/
 
 	fprintf(stdout,"Closing\n");
 
