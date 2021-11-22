@@ -32,12 +32,12 @@ int openReceiver(char filename[]){
 
   fd = open(filename, O_RDWR | O_NOCTTY);
   if (fd < 0){
-    fprintf(stderr,"%s",filename);
+    fprintf(stderr,"%s\n",filename);
     return ERROR;
   }
 
   if (tcgetattr(fd, &oldtiosreceiver) == -1){ /* save current port settings */
-    fprintf(stderr,"tcgetattr");
+    fprintf(stderr,"tcgetattr\n");
     return ERROR;
   }
 
@@ -60,7 +60,7 @@ int openReceiver(char filename[]){
   tcflush(fd, TCIOFLUSH);
 
   if (tcsetattr(fd, TCSANOW, &newtio) == -1){
-    fprintf(stderr,"tcsetattr");
+    fprintf(stderr,"tcsetattr\n");
     return ERROR;
   }
 
@@ -201,23 +201,39 @@ int receivedStuffedData(int fd, char *buffer){
         else if( frame_byte == FLAG ) {
           bufferSize = dataDeStuffing(stuffedBuffer, index, buffer, &bcc2);
           calcBCC2 = createBCC2(buffer, bufferSize);
-
+          /*Slide 15*/
           if( isRepeated ){
-
+            if( sendSupervisionFrame(fd, A_SR, C_RR(1-r)) == ERROR ){
+              fprintf(stderr, "Error sending supervision frame repeting frame\n");
+              state = START_;
+              return ERROR;
+            }
+            state = START_;
           }
-
-
-          state = STOP_;
+          else if( calcBCC2 != bcc2 ){
+            if( sendSupervisionFrame(fd, A_SR, C_REJ(1-r)) == ERROR ){
+              fprintf(stderr, "Error sending supervision frame rejecting frame\n");
+              state = START_;
+              return ERROR;
+            }
+            state = START_;
+          }
+          else state = STOP_;
         }
-        else state = START_;
+        else stuffedBuffer[index++] = frame_byte;
         break;
       default:
         if (DEBUG == 1) fprintf(stdout,"Default statement reached\n");
         break;
       }
+    }
 
-      return SUCCESS;
-  }
+    if( sendSupervisionFrame(fd, A_SR, C_RR(r)) < 0 ){
+      fprintf(stderr, "Error sending supervision frame for all data received well\n");
+      return ERROR;
+    }
+
+    return bufferSize;
 }
 
 
@@ -238,14 +254,20 @@ int main(int argc, char **argv)
 
   int fd = openReceiver(argv[1]);
 
-  char stuff[9] = {0x7d,0x5d, 0x01,0x02,0x03, 0x04, 0x05, 0x7d, 0x5e};
+  char buffer[STUFF_DATA_MAX];
+  int size = receivedStuffedData(fd, buffer );
+
+  for(int i = 0; i < size; i++) fprintf(stdout,"Byte -> %02x\n",buffer[i]);
+  /*char stuff[9] = {0x7d,0x5d, 0x01,0x02,0x03, 0x04, 0x05, 0x7d, 0x5e};
   char buff[7];
   char bccc[1];
   int size = dataDeStuffing(stuff,9,buff,bccc);
   fprintf(stdout,"Leaving data stuffing\n");
 
   for(int i = 0; i < size; i++) fprintf(stdout,"Byte -> %02x\n",buff[i]);
-  fprintf(stdout,"BCC2 -> %02x\n", bccc[0]);
+  fprintf(stdout,"BCC2 -> %02x\n", bccc[0]);*/
+
+
 
   fprintf(stdout,"Sleeping\n");
 
