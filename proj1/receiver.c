@@ -97,6 +97,7 @@ int closeReceiver(int fd){
   return SUCCESS;
 }
 
+
 int receiverDisc(int fd){
   MACHINE_STATE receiverState = START_;
 
@@ -144,60 +145,57 @@ int dataDeStuffing(char *stuffedBuffer, int stuffedBufferSize, char *buffer, cha
 }
 
 
-int receivedStuffedData(int fd, char *buffer){
-  MACHINE_STATE state = START_;
-
-  char stuffedBuffer[STUFF_DATA_MAX];
+int receivedStuffedDataSM(MACHINE_STATE *state, int fd, char *stuffedBuffer, char *buffer){
 
   int isRepeated, bufferSize, index;
 
   char frame_byte, receivedAdd, repeatedCtrl = C_FRAME_I(r), ctrl = C_FRAME_I(1-r), receivedCtrl, calcBCC, bcc2, calcBCC2;
 
 
-  while(state != STOP_){
+  while(*state != STOP_){
     if(getBytefromFd(fd, &frame_byte) == ERROR){
       return ERROR;
     }
 
-    switch (state) {
+    switch (*state) {
       case START_:
         if (DEBUG == 1) fprintf(stdout,"Entered in START_\n");
-        if( frame_byte == FLAG ) state = FLAG_RCV;
-        else state = START_;
+        if( frame_byte == FLAG ) *state = FLAG_RCV;
+        else *state = START_;
         break;
       case FLAG_RCV:
         if (DEBUG == 1) fprintf(stdout,"Entered in FLAG_RCV\n");
-        if( frame_byte == FLAG) return SUCCESS;
+        if( frame_byte == FLAG ) continue;
         else if( frame_byte == A_SR ) {
-          state = A_RCV;
+          *state = A_RCV;
           isRepeated = 0;
           receivedAdd = frame_byte;
         }
-        else state = START_;
+        else *state = START_;
         break;
       case A_RCV:
         if (DEBUG == 1) fprintf(stdout,"Entered in A_RCV\n");
         if( frame_byte == repeatedCtrl ) isRepeated = 1;
-        if( frame_byte == FLAG ) state = FLAG_RCV;
+        if( frame_byte == FLAG ) *state = FLAG_RCV;
         else if( frame_byte == ctrl || isRepeated ) {
-          state = C_RCV;
+          *state = C_RCV;
           receivedCtrl = frame_byte;
           calcBCC = BCC(receivedCtrl,receivedAdd);
         }
-        else state = START_;
+        else *state = START_;
         break;
       case C_RCV:
         if (DEBUG == 1) fprintf(stdout,"Entered in C_RCV\n");
-        if( frame_byte == FLAG ) state = FLAG_RCV;
+        if( frame_byte == FLAG ) *state = FLAG_RCV;
         else if( frame_byte == calcBCC ) {
-          state = BCC_OK;
+          *state = BCC_OK;
           index = 0;
         }
-        else state = START_;
+        else *state = START_;
         break;
       case BCC_OK:
         if (DEBUG == 1) fprintf(stdout,"Entered in BCC_OK\n");
-        if( index >= STUFF_DATA_MAX ) state = START_;
+        if( index >= STUFF_DATA_MAX ) *state = START_;
         else if( frame_byte == FLAG ) {
           bufferSize = dataDeStuffing(stuffedBuffer, index, buffer, &bcc2);
           calcBCC2 = createBCC2(buffer, bufferSize);
@@ -205,20 +203,20 @@ int receivedStuffedData(int fd, char *buffer){
           if( isRepeated ){
             if( sendSupervisionFrame(fd, A_SR, C_RR(1-r)) == ERROR ){
               fprintf(stderr, "Error sending supervision frame repeting frame\n");
-              state = START_;
+              *state = START_;
               return ERROR;
             }
-            state = START_;
+            *state = START_;
           }
           else if( calcBCC2 != bcc2 ){
             if( sendSupervisionFrame(fd, A_SR, C_REJ(1-r)) == ERROR ){
               fprintf(stderr, "Error sending supervision frame rejecting frame\n");
-              state = START_;
+              *state = START_;
               return ERROR;
             }
-            state = START_;
+            *state = START_;
           }
-          else state = STOP_;
+          else *state = STOP_;
         }
         else stuffedBuffer[index++] = frame_byte;
         break;
@@ -228,15 +226,32 @@ int receivedStuffedData(int fd, char *buffer){
       }
     }
 
-    if( sendSupervisionFrame(fd, A_SR, C_RR(r)) < 0 ){
-      fprintf(stderr, "Error sending supervision frame for all data received well\n");
-      return ERROR;
-    }
-
     return bufferSize;
 }
 
 
+int receivedStuffedData(int fd, char *buffer){
+  MACHINE_STATE state = START_;
+
+  char stuffedBuffer[STUFF_DATA_MAX];
+
+
+  int size = receivedStuffedDataSM(&state, fd, stuffedBuffer, buffer);
+  if( size == ERROR ){
+    fprintf(stderr, "Error verifying stuffed buffer integrity\n");
+    return ERROR;
+  }
+
+
+  if( sendSupervisionFrame(fd, A_SR, C_RR(r)) == ERROR ){
+    fprintf(stderr, "Error sending supervision frame for all data received well\n");
+    return ERROR;
+  }
+
+  r = 1 - r;
+
+  return size;
+}
 
 
 int main(int argc, char **argv)
@@ -256,6 +271,7 @@ int main(int argc, char **argv)
 
   char buffer[STUFF_DATA_MAX];
   int size = receivedStuffedData(fd, buffer );
+  printf("Out\n");
 
   for(int i = 0; i < size; i++) fprintf(stdout,"Byte -> %02x\n",buffer[i]);
   /*char stuff[9] = {0x7d,0x5d, 0x01,0x02,0x03, 0x04, 0x05, 0x7d, 0x5e};
@@ -266,7 +282,6 @@ int main(int argc, char **argv)
 
   for(int i = 0; i < size; i++) fprintf(stdout,"Byte -> %02x\n",buff[i]);
   fprintf(stdout,"BCC2 -> %02x\n", bccc[0]);*/
-
 
 
   fprintf(stdout,"Sleeping\n");

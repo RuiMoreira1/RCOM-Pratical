@@ -57,7 +57,15 @@ int dataDeStuffing(char *stuffedBuffer, int stuffedBufferSize, char *buffer, cha
  */
 int receivedStuffedData(int fd, char *buffer);
 
-//void receivedStuffedDataSM(MACHINE_STATE *state, )
+/**
+ * @brief State machine for receiving stuffed data frame
+ * @param  state                       state machine state
+ * @param  fd                          serial port file descriptor
+ * @param  stuffedBuffer               stuffed buffer received from sender
+ * @param  buffer                      destuffed buffer
+ * @return               buffer size upon success, ERROR otherwise
+ */
+int receivedStuffedDataSM(MACHINE_STATE *state, int fd, char *stuffedBuffer, char *buffer);
 
 
 
