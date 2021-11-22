@@ -1,8 +1,10 @@
 #include "common.h"
 
 
+int isRejected;
+
 int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE, char* reject){
-  int isRejected; char frame_byte;
+  char frame_byte;
 
   if( getBytefromFd(fd, &frame_byte) == ERROR ) return ERROR;
 
@@ -17,11 +19,14 @@ int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE
       if (DEBUG == 1) fprintf(stdout,"Entered in FLAG_RCV\n");
       if( frame_byte == FLAG) return SUCCESS;
       else if( frame_byte == A_BYTE ) *state = A_RCV;
-      else state = START_;
+      else *state = START_;
       break;
     case A_RCV:
       if (DEBUG == 1) fprintf(stdout,"Entered in A_RCV\n");
-      if( reject != NULL && frame_byte == *reject ) isRejected = 1;
+      if( reject != NULL && frame_byte == *reject ) {
+        fprintf(stderr,"Rej Byte\n");
+        isRejected = 1;
+      }
       if( frame_byte == FLAG ) *state = FLAG_RCV;
       else if( frame_byte == C_BYTE || isRejected ) *state = C_RCV;
       else *state = START_;
@@ -41,7 +46,10 @@ int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE
       if (DEBUG == 1) fprintf(stdout,"Default statement reached\n");
       break;
     }
-    if( *state == STOP_ && isRejected ) return 1;
+    if( *state == STOP_ && isRejected ){
+      *state = START_;
+      return 1;
+    }
     return SUCCESS;
 }
 
