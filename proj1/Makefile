@@ -2,8 +2,8 @@ CC=gcc
 CFLAGS = #-Wall
 LIBS =
 
-EMISSOR = sender.c common.c dataLayer.c
-RECEPTOR = receiver.c common.c dataLayer.c
+EMISSOR = sender.c common.c dataLayer.c application.c
+RECEPTOR = receiver.c common.c dataLayer.c application.c
 
 EMISSOR_OBJ = $(EMISSOR:.c=.o)
 RECEPTOR_OBJ = $(RECEPTOR:.c=.o)
