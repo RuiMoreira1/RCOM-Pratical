@@ -2,3 +2,4 @@ receiver
 sender
 *.o
 *.d
+serialport
