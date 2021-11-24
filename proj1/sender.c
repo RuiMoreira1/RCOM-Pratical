@@ -1,10 +1,5 @@
 #include "sender.h"
 
-#define BAUDRATE B38400
-#define _POSIX_SOURCE 1 /* POSIX compliant source */
-#define FALSE 0
-#define TRUE 1
-
 MACHINE_STATE senderState;
 
 int conta = 0, flag = 1, s = 0;

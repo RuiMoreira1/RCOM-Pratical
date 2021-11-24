@@ -1,44 +1,103 @@
 #include "serial.h"
 
-int main(int argc, char **argv){
 
-  if (argc < 3 ||
-    ((strcmp("/dev/ttyS10", argv[1])) && (strcmp("/dev/ttyS11", argv[1])))) {
+int parseArgs(int argc, char **argv){
+  int options;
 
-    printf("Usage: application serialPort type <fileName>\nex: application /dev/ttyS10 0 ./imagem.gif\n<fileName> default value: ./pinguim.gif\n");
-    exit(1);
+  int res = SUCCESS;
+
+  bool temp = (argc < 3 || ((strcmp(serialPort1, argv[1])) && (strcmp(serialPort2, argv[1]))) || ( (strcmp(serialPort1, argv[2])) && (strcmp(serialPort2, argv[2])) ) ) ;
+  if (temp) {
+
+    printf("Usage: application serialPort type <fileName>\nex: application /dev/ttyS10 0 ./path_to_file\n");
+    res = ERROR;
   }
 
-  int fd, status = atoi(argv[2]);
-  char* filePath = argc > 3 ? argv[3] : "./pinguim.gif";
+  int i = 0;
+  while( (options = getopt(argc, argv, ":dh")) && i++ < argc ){
+    printf("%c\n",options);
+    switch (options) {
+      case 'd':
+        printf("sada");
+        if(!temp){
+          printf("Dasdas");
+          fprintf(stdout, "Debug Version enabled, printing contents to output.txt and err.txt\n");
+          freopen("output.txt","a+", stdout);
+          freopen("err.txt","a+", stderr);
+          return 2;
+        }
+        break;
+      case 'h':
+        fprintf(stdout, "/serialport /dev/ttySRX W ./path_to_image\n");
+        fprintf(stdout, "/dev/ttySRX  RX-> serial port number\n");
+        fprintf(stdout, "W -> [0] for sender [1] for receiver\n");
+        fprintf(stdout, "./path_to_image, ./pinguim.gif by default\n");
+        break;
+      case '?':
+        fprintf(stdout, "Unknown option\n");
+        break;
+    }
+  }
+
+  return res;
+}
+
+
+int execution(int argc, char **argv){
+
+  int acc = 0;
+  int res = parseArgs(argc, argv);
+  if(res == ERROR) return ERROR;
+  else if( res == 2 ) acc = 1;
+
+
+
+  int fd, status = atoi(argv[2+acc]);
+  char* filePath = argc > (3+acc) ? argv[3+acc] : "./pinguim.gif";
 
   if (status != SENDERID && status != RECEIVERID) {
-    printf("application 2nd argument(type) should be either 0 or 1.\n0-Emissor\n1-Receptor\n");
-    exit(1);
+    printf("application 2nd argument(type) should be either 0 or 1.\n0-Sender\n1-Receiver\n");
+    return ERROR;
   }
 
-  if ((fd = llopen(argv[1], status)) < 0) {
-    fprintf(stderr, "Failed to connect on llopen. The receiver is probably disconnected\n");
-    exit(1);
+  if ((fd = llopen(argv[1+acc], status)) < 0) {
+    fprintf(stderr, "Error on llopen\n");
+    return ERROR;
   }
 
   if (status == SENDERID) {
     if (sendFile(fd, filePath) < 0) {
       fprintf(stderr, "Error sending file\n");
-      exit(1);
+      return ERROR;
     }
 
-  } else {
-    if (readFile(fd) < 0) {
-      fprintf(stderr, "Error reading file!\n");
-      exit(1);
+  }
+  else {
+    if (readFile(fd) == ERROR) {
+      fprintf(stderr, "Error reading file\n");
+      return ERROR;
     }
   }
 
-  if (llclose(fd,status) < 0) {
+  if (llclose(fd,status) == ERROR) {
     fprintf(stderr, "Error on llclose\n");
-    exit(1);
+    return ERROR;
   }
 
-  return 0;
+  return SUCCESS;
+}
+
+
+
+
+int main(int argc, char **argv){
+
+  if( execution(argc, argv) == ERROR ){
+    fprintf(stdout, "File %s was not sent correctly\n", argc > 3 ? argv[3] : "./pinguim.gif");
+    return ERROR;
+  }
+  else{
+    fprintf(stdout, "File %s was sent correctly\n", argc > 3 ? argv[3] : "./pinguim.gif");
+    return SUCCESS;
+  }
 }

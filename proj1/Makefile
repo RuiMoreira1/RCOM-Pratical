@@ -17,4 +17,4 @@ $(SP_EXEC): $(SP_OBJ)
 	$(CC) $(CFLAGS) -o $@ $(SP_OBJ) $(LIBS)
 
 clean:
-	rm -rf $(SP_EXEC) *.o *.d serialport
+	rm -rf $(SP_EXEC) *.o *.d serialport *.txt

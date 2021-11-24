@@ -42,14 +42,41 @@ void buildDataPacket(u_int8_t* dataPacket, int dataPacketSize, u_int8_t* frameDa
 */
 int sendData(int fd, FILE* ptr, long fileSize);
 
+/**
+ * [sendControlPacket  description]
+ * @param  fd                         [description]
+ * @param  controlField               [description]
+ * @param  fileSize                   [description]
+ * @param  fileName                   [description]
+ * @return              [description]
+ */
 int sendControlPacket (int fd, u_int8_t controlField, long fileSize, char fileName[]);
 
+/**
+ * [sendFile description]
+ * @param  fd                     [description]
+ * @param  filePath               [description]
+ * @return          [description]
+ */
 int sendFile(int fd, char filePath[]);
 
 
-
+/**
+ * [readFile description]
+ * @param  fd               [description]
+ * @return    [description]
+ */
 int readFile(int fd);
 
+/**
+ * [readControlPacket description]
+ * @param  fd                         [description]
+ * @param  controlField               [description]
+ * @param  buffer                     [description]
+ * @param  fileName                   [description]
+ * @param  fileSize                   [description]
+ * @return              [description]
+ */
 int readControlPacket(int fd, int controlField, u_int8_t buffer[], char** fileName, long* fileSize);
 
 #endif
