@@ -211,7 +211,7 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 		if( conta == MAX_NO_ANSWER ){
 			fprintf(stdout,"Communication between Receiver && Sender failed Stuffed frame\n");
 			stuffedBufferState = STOP_;
-			//return ERROR;
+			return ERROR;
 		}
 
 		if( flag ){
