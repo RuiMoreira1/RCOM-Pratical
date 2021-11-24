@@ -1,209 +1,164 @@
 #include "application.h"
 
-int makeControlPacket(int fd, long fSize,char fName[], char controlField){
-    
-    size_t fNameSize = strlen(fName) +1;
+int sendFile(int fd, char filePath[]) {
+  FILE *ptr;
+  if ((ptr = fopen(filePath, "rb")) == NULL) {
+    fprintf(stderr, "Error opening file\n");
+    return -1;
+  }
 
-    if(fNameSize > 0xff){
-        perror("File name is too big\n");
-        return -1;
-    }
+  fseek(ptr, 0, SEEK_END);
+  long fileSize = ftell(ptr);
+  rewind(ptr);
+  if (sendControlPacket(fd, START_CTRL, fileSize, basename(filePath)) < 0) return -1;
 
-    size_t pSize = 5 + sizeof(long) + fNameSize;
-    uint8_t* cPacket = malloc(pSize);
+  if (sendData(fd, ptr, fileSize) < 0) {
+    return -1;
+  }
 
-    cPacket[0] = controlField;
-    cPacket[1] = T_F_SIZE;
-    cPacket[2] = (uint8_t) sizeof(long);
-    memcpy(cPacket +3, &fSize,sizeof(long));
-    cPacket[3+ sizeof(long)] = T_F_NAME;
-    cPacket[4+ sizeof(long)] = (uint8_t) fNameSize;
-    memcpy(cPacket +5 +sizeof(long), fName,fNameSize);
+  if (sendControlPacket(fd, END_CTRL, fileSize, basename(filePath)) < 0) return -1;
 
-    if(llwrite(fd,cPacket,pSize,SENDERID) == -1) return -1;
-
-    free(cPacket);
-    return 0;
-
+  fclose(ptr);
+  return fileSize;
 }
 
-int readControlPacket(int fd, long* fSize,char** fName, char controlField, uint8_t buf[]){
+int sendControlPacket (int fd, u_int8_t controlField, long fileSize, char fileName[]) {
+  size_t fileNameSize = strlen(fileName) + 1;
+  if (fileNameSize > 0xff) {
+    fprintf(stderr, "File name can only be up to 255 chars long\n");
+    return -1;
+  }
 
-    int size;
-    if(size = llread(fd,buf,RECEIVERID) == -1){
-        printf("llread failed\n");
-        return -1;
-    }
+  size_t packetSize = 5 + sizeof(long) + fileNameSize;
+  u_int8_t *controlPacket = malloc(packetSize);
 
-    if(buf[0] != controlField){
-        perror("Control Field failed\n");
-        return -1;
-    }
+  controlPacket[0] = controlField;
 
-    uint8_t t_type;
-    uint8_t length;
-    int i = 1;
-    while( i < size){
-        t_type = buf[i];
-        i++;
-        length = buf[i];
-        i++;
+  controlPacket[1] = T_FILE_SIZE;
+  controlPacket[2] = (u_int8_t) sizeof(long);
+  memcpy(controlPacket + 3, &fileSize, sizeof(long));
 
-        if( t_type == T_F_SIZE){
-            memcpy(fSize, buf + i, length);
-        }
-        else if(t_type == T_F_NAME){
-            *fName = malloc(length);
-            memcpy(*fName, buf + i,length);
-        }
+  controlPacket[3 + sizeof(long)] = T_FILE_NAME;
+  controlPacket[4 + sizeof(long)] = (u_int8_t) fileNameSize;
+  memcpy(controlPacket + 5 + sizeof(long), fileName, fileNameSize);
 
-        i += length;
-    }
 
-    return 0;
+  if (llwrite(fd, controlPacket, packetSize, SENDERID) < 0) return -1;
+
+  free(controlPacket);
+
+  return 1;
 }
 
-void makeDataPacket(uint8_t* fData ,int fDataSize ,uint8_t* dPacket,int dPacketSize,uint8_t sequence){
+int sendData(int fd, FILE* ptr, long fileSize) {
+  u_int8_t sequenceNum = 0;
 
-    int8_t l1 = fDataSize % 256;
-    int8_t l2 = fDataSize / 256;
+  u_int8_t* data = malloc(fileSize);
+  fread(data, sizeof(u_int8_t), fileSize, ptr);
 
-    dPacket[0] = CF_DATA;
-    dPacket[1] = sequence;
-    dPacket[2] = l2;
-    dPacket[3] = l1;
-    memcpy(dPacket + 4,fData,fDataSize);
+  for (int idx = 0; idx < fileSize; idx += DATA_ACTUAL_SIZE) {
+    int frameDataSize = min(DATA_ACTUAL_SIZE, fileSize - idx);
+    u_int8_t* frameData = malloc(frameDataSize);
+    memcpy(frameData, data + idx, frameDataSize);
 
+    int dataPacketSize = frameDataSize + NUM_DATA_ADDITIONAL_FIELDS;
+    u_int8_t* dataPacket = malloc(dataPacketSize);
+    buildDataPacket(dataPacket, dataPacketSize, frameData, frameDataSize, sequenceNum);
+
+    if (llwrite(fd, dataPacket, dataPacketSize, SENDERID) < 0) {
+      fprintf(stderr, "Error sending data packet\n");
+      return -1;
+    }
+
+    free(frameData); free(dataPacket);
+
+    sequenceNum = (sequenceNum + 1) % 256;
+  }
+
+  free(data);
+  return 1;
 }
 
-int sendDataPacket(int fd, long fSize, FILE* fd1){
-    
-    uint8_t* data = malloc(fSize);
-    fread(data,sizeof(uint8_t), fSize,fd1);
-
-    uint8_t sequence = 0;
-
-    int i = 0;
-    while(i< fSize){
-
-        int fDataSize = 0;
-        if(fSize -i < 200){
-            fDataSize = fSize -i;
-        }
-        else{
-            fDataSize = 200;
-        }
-
-        uint8_t* fData = malloc(fDataSize);
-        memcpy(fData,data + i,fDataSize);
-
-        uint8_t* dPacket = malloc(fDataSize + 4);
-        makeDataPacket(fData,fDataSize,dPacket,fDataSize +4,sequence);
-
-        if(llwrite(fd,dPacket, fDataSize +4, SENDERID)){
-            printf("llwrite failed \n");
-            return -1;
-        }
-
-        free(fData);
-        free(dPacket);
-
-        sequence = (sequence +1) % 256;
-        i += 200;
-
-    }
-
-    free(data);
-
-    return 0;
+void buildDataPacket(u_int8_t* dataPacket, int dataPacketSize, u_int8_t* frameData, int frameDataSize, u_int8_t sequenceNum) {
+  u_int8_t l2 = frameDataSize / NUM_OCTETS_MULTIPLIER;
+  u_int8_t l1 = frameDataSize % NUM_OCTETS_MULTIPLIER;
+  dataPacket[0] = DATA_CTRL; dataPacket[1] = sequenceNum; dataPacket[2] = l2; dataPacket[3] = l1;
+  memcpy(dataPacket + NUM_DATA_ADDITIONAL_FIELDS, frameData, frameDataSize);
 }
 
-int sendFile(int fd,char path[]){
-    FILE* fd1;
-    fd1 = fopen(path,"rb");
 
-    if(fd1 == NULL){
-        perror("fopen failed\n");
-        return -1;
+
+int readControlPacket(int fd, int controlField, u_int8_t buffer[], char** fileName, long* fileSize) {
+  int size, currIdx = 1;
+  if ((size = llread(fd, buffer, RECEIVERID)) < 0) {
+    fprintf(stderr, "Error reading Control Packet\n");
+    return -1;
+  }
+  if (buffer[0] != controlField) {
+    fprintf(stderr, "Invalid control byte\n");
+    return -1;
+  }
+
+  u_int8_t type, length;
+  while (currIdx < size) {
+    type = buffer[currIdx++];
+    length = buffer[currIdx++];
+
+    switch (type) {
+      case T_FILE_SIZE:
+        memcpy(fileSize, buffer+currIdx, length);
+        break;
+      case T_FILE_NAME:
+        *fileName = malloc(length);
+        memcpy(*fileName, buffer+currIdx, length);
+      default:
+        break;
     }
+    currIdx += length;
+  }
 
-    if(fseek(fd1, 0, SEEK_END) == -1){
-        perror("fseek end failed\n");
-        return -1;
-    }
-
-    long fSize = ftell(fd1) +1;
-
-
-    if(fseek(fd1,0,SEEK_SET) == -1){
-        perror("fseek set failed\n");
-        return -1;
-    }
-
-    //SEND CONTROL PACKET
-    if(makeControlPacket(fd,fSize,basename(path),CF_START) == -1) return -1;
-
-    //SEND DATA
-    if(sendDataPacket(fd,fSize,fd1) == -1) return -1;
-
-    //SEND CONTROL PACKET
-    if(makeControlPacket(fd,fSize,basename(path),CF_END) == -1) return -1;
-
-    fclose(fd1);
-    return fSize;
+  return 1;
 }
 
-int readFile(int fd){
+int readFile(int fd) {
+  u_int8_t buffer[MAX_DATA_SIZE];
+  char* fileName = NULL;
+  long fileSize;
 
+  if (readControlPacket(fd, START_CTRL, buffer, &fileName, &fileSize) < 0) return -1;
 
-    char* fName = NULL;
-    char buf[255];
-    long fSize;
-    
+  FILE *ptr;
+  if ((ptr = fopen(fileName, "wb")) == NULL) {
+    fprintf(stderr, "Error opening file\n");
+    return -1;
+  }
 
-    //Read Control Packet
-    if(readControlPacket(fd,&fSize,&fName,CF_START,buf) == -1) return -1;
-
-    
-    FILE* fd1;
-    fd1= fopen(fName, "wb");
-
-    if(fd1 == NULL){
-        perror("fopen failed\n");
-        return -1;
+  int size;
+  u_int8_t sequenceNum = 0;
+  while ((size = llread(fd, buffer, RECEIVERID)) > 0) {
+    if (buffer[0] == END_CTRL) {
+      break;  // Reached END control packet
     }
-
-    // loop llread
-    int size;
-    uint8_t sequence;
-    while ((size = llread(fd,buf,RECEIVERID)) != -1)
-    {
-        if(buf[0] == CF_END) break;
-
-        if(buf[0] != CF_DATA){
-            printf("No control data\n");
-            return -1;
-        }
-
-        if(buf[1] != sequence){
-            printf("Invalid sequence\n");
-            return -1;
-        }
-
-        int dfSize =  256 * buf[2]  + buf[3];
-        uint8_t* dField = malloc(dfSize);
-        memcpy(dField,buf + 4 , dfSize);
-
-        fwrite(dField,sizeof(uint8_t),dfSize,fd1);
-
-        sequence = (sequence +1) % 256;
-        free(dField);
+    if (buffer[0] != DATA_CTRL) {
+      fprintf(stderr, "Invalid control byte for data packet\n");
+      return -1;
     }
+    if (buffer[1] != sequenceNum) {
+      fprintf(stderr, "Invalid sequence number received in data packet!\n");
+      return -1;
+    }
+    int dataFieldOctets = buffer[2] * NUM_OCTETS_MULTIPLIER + buffer[3];
+    u_int8_t* dataField = malloc(dataFieldOctets);
+    memcpy(dataField, buffer + NUM_DATA_ADDITIONAL_FIELDS, dataFieldOctets);
 
-    free(fName);
-    fclose(fd1);
-    return fSize;
+    // Write to opened file
+    fwrite(dataField, sizeof(u_int8_t), dataFieldOctets, ptr);
 
+    sequenceNum = (sequenceNum + 1) % 256;
+    free(dataField);
+  }
 
+  free(fileName);
+  fclose(ptr);
+  return fileSize;
 }
-

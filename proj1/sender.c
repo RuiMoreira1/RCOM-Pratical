@@ -21,8 +21,6 @@
 #define FALSE 0
 #define TRUE 1
 
-volatile int STOP_RUNNING = FALSE;
-
 MACHINE_STATE senderState;
 
 int conta = 0, flag = 1, s = 0;
@@ -31,8 +29,8 @@ struct termios oldtio;
 
 
 void answerAlarm(){
-	fprintf(stdout, "Timeout\n");
 	flag = 1; conta++;
+	fprintf(stderr, "Timeout\n");
 }
 
 
@@ -99,7 +97,7 @@ int sendSetFrame(int fd){
 
 	while(setState != STOP_){
 		if( conta == 3 ){
-				fprintf(stderr,"Communication between Receiver && Sender failed\n");
+				fprintf(stderr,"Communication between Receiver && Sender failed SET\n");
 				return ERROR;
 		}
 
@@ -133,7 +131,7 @@ int senderDisc(int fd){
 
 	while( senderState != STOP_ ){
 		if( conta == 3 ){
-			fprintf(stdout,"Communication between Receiver && Sender failed\n");
+			fprintf(stdout,"Communication between Receiver && Sender failed DISC\n");
 			return ERROR;
 		}
 
@@ -231,9 +229,10 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 	MACHINE_STATE stuffedBufferState = START_;
 
 	while( stuffedBufferState != STOP_ ){
-		if( conta == 3 ){
-			fprintf(stdout,"Communication between Receiver && Sender failed\n");
-			return ERROR;
+		if( conta == MAX_NO_ANSWER ){
+			fprintf(stdout,"Communication between Receiver && Sender failed Stuffed frame\n");
+			stuffedBufferState = STOP_;
+			//return ERROR;
 		}
 
 		if( flag ){
@@ -279,7 +278,7 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 	return bufferSize;
 }
 
-
+/*
 int main(int argc, char **argv)
 {
   if ((argc < 2) ||
@@ -310,7 +309,7 @@ int main(int argc, char **argv)
 	for(int i = 0; i <size; i++) fprintf(stdout,"Byte -> %02x\n", stuffedBuffer[i]);*/
 
 
-
+/*
 	fprintf(stdout,"Closing\n");
 
 	closeSender(fd);
@@ -318,4 +317,4 @@ int main(int argc, char **argv)
 
 
 
-}
+}*/

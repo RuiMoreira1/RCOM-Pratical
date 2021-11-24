@@ -19,8 +19,6 @@
 #define FALSE 0
 #define TRUE 1
 
-volatile int STOP_RUNNING = FALSE;
-
 int r = 1;
 
 struct termios oldtiosreceiver;
@@ -159,12 +157,12 @@ int receivedStuffedDataSM(MACHINE_STATE *state, int fd, char *stuffedBuffer, cha
 
     switch (*state) {
       case START_:
-        if (DEBUG == 1) fprintf(stdout,"Entered in START_\n");
+        //if (DEBUG == 1) fprintf(stdout,"Entered in START_\n");
         if( frame_byte == FLAG ) *state = FLAG_RCV;
         else *state = START_;
         break;
       case FLAG_RCV:
-        if (DEBUG == 1) fprintf(stdout,"Entered in FLAG_RCV\n");
+        //if (DEBUG == 1) fprintf(stdout,"Entered in FLAG_RCV\n");
         if( frame_byte == FLAG ) continue;
         else if( frame_byte == A_SR ) {
           *state = A_RCV;
@@ -174,7 +172,7 @@ int receivedStuffedDataSM(MACHINE_STATE *state, int fd, char *stuffedBuffer, cha
         else *state = START_;
         break;
       case A_RCV:
-        if (DEBUG == 1) fprintf(stdout,"Entered in A_RCV\n");
+        //if (DEBUG == 1) fprintf(stdout,"Entered in A_RCV\n");
         if( frame_byte == repeatedCtrl ) isRepeated = 1;
         if( frame_byte == FLAG ) *state = FLAG_RCV;
         else if( frame_byte == ctrl || isRepeated ) {
@@ -185,7 +183,7 @@ int receivedStuffedDataSM(MACHINE_STATE *state, int fd, char *stuffedBuffer, cha
         else *state = START_;
         break;
       case C_RCV:
-        if (DEBUG == 1) fprintf(stdout,"Entered in C_RCV\n");
+        //if (DEBUG == 1) fprintf(stdout,"Entered in C_RCV\n");
         if( frame_byte == FLAG ) *state = FLAG_RCV;
         else if( frame_byte == calcBCC ) {
           *state = BCC_OK;
@@ -194,7 +192,7 @@ int receivedStuffedDataSM(MACHINE_STATE *state, int fd, char *stuffedBuffer, cha
         else *state = START_;
         break;
       case BCC_OK:
-        if (DEBUG == 1) fprintf(stdout,"Entered in BCC_OK\n");
+        //if (DEBUG == 1) fprintf(stdout,"Entered in BCC_OK\n");
         if( index >= STUFF_DATA_MAX ) *state = START_;
         else if( frame_byte == FLAG ) {
           bufferSize = dataDeStuffing(stuffedBuffer, index, buffer, &bcc2);
@@ -221,7 +219,7 @@ int receivedStuffedDataSM(MACHINE_STATE *state, int fd, char *stuffedBuffer, cha
         else stuffedBuffer[index++] = frame_byte;
         break;
       default:
-        if (DEBUG == 1) fprintf(stdout,"Default statement reached\n");
+        //if (DEBUG == 1) fprintf(stdout,"Default statement reached\n");
         break;
       }
     }
@@ -234,7 +232,6 @@ int receivedStuffedData(int fd, char *buffer){
   MACHINE_STATE state = START_;
 
   char stuffedBuffer[STUFF_DATA_MAX];
-
 
   int size = receivedStuffedDataSM(&state, fd, stuffedBuffer, buffer);
   if( size == ERROR ){
@@ -253,10 +250,10 @@ int receivedStuffedData(int fd, char *buffer){
   return size;
 }
 
-
+/*
 int main(int argc, char **argv)
 {
-  //freopen("output.txt","a+", stdout); /* STDOUT to file */
+  //freopen("output.txt","a+", stdout); /* STDOUT to file *//*
   if ((argc < 2) ||
       ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
        (strcmp("/dev/ttyS11", argv[1]) != 0)))
@@ -283,10 +280,10 @@ int main(int argc, char **argv)
   for(int i = 0; i < size; i++) fprintf(stdout,"Byte -> %02x\n",buff[i]);
   fprintf(stdout,"BCC2 -> %02x\n", bccc[0]);*/
 
-
+/*
   fprintf(stdout,"Sleeping\n");
 
   closeReceiver(fd);
 
 
-}
+}*/

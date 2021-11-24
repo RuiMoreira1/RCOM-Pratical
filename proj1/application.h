@@ -5,31 +5,51 @@
 #include <string.h>
 #include <stdio.h>
 #include <libgen.h>
-#include <stdint.h>
+
 #include "dataLayer.h"
 #include "macros.h"
 
-//Control field
+#define PACKET_DATA_SIZE 200
 
-#define CF_DATA 1
-#define CF_START 2
-#define CF_END 3
+// T BYTE
+#define T_FILE_SIZE 0
+#define T_FILE_NAME 1
 
-//T PARAMETER
+// PACKETS CONSTANTS
+#define DATA_CTRL 1
+#define START_CTRL 2
+#define END_CTRL 3
 
-#define T_F_SIZE 0
-#define T_F_NAME 1
+// DATA PACKET CONSTANTS
+#define NUM_DATA_ADDITIONAL_FIELDS 4
+#define DATA_ACTUAL_SIZE (PACKET_DATA_SIZE - NUM_DATA_ADDITIONAL_FIELDS)
+#define NUM_OCTETS_MULTIPLIER 256
 
-int makeControlPacket(int fd, long fSize,char fName[], char controlField);
+#define min(a,b) (((a) < (b)) ? (a) : (b))
 
-int readControlPacket(int fd, long* fSize,char** fName, char controlField, uint8_t buf[]);
 
-void makeDataPacket(uint8_t* fData ,int fDataSize ,uint8_t* dPacket,int dPacketSize,uint8_t sequence);
+/**
+* @brief Builds data packet, from a given data buffer
+*/
+void buildDataPacket(u_int8_t* dataPacket, int dataPacketSize, u_int8_t* frameData, int frameDataSize, u_int8_t sequenceNum);
 
-int sendDataPacket(int fd, long fSize, FILE* fd1);
+/**
+* @brief Sends data packet
+* @param fd File Descriptor
+* @param ptr Pointer to file being trasnferred
+* @param fileSize Size of the file in bytes
+* @return Positive if succeeded, negative otherwise
+*/
+int sendData(int fd, FILE* ptr, long fileSize);
 
-int sendFile(int fd,char path[]);
+int sendControlPacket (int fd, u_int8_t controlField, long fileSize, char fileName[]);
+
+int sendFile(int fd, char filePath[]);
+
+
 
 int readFile(int fd);
+
+int readControlPacket(int fd, int controlField, u_int8_t buffer[], char** fileName, long* fileSize);
 
 #endif

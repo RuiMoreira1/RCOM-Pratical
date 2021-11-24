@@ -10,19 +10,19 @@ int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE
 
   switch(*state){
     case START_:
-      if (DEBUG == 1) fprintf(stdout,"Entered in START_\n");
+      //if (DEBUG == 1) fprintf(stdout,"Entered in START_\n");
       if( frame_byte == FLAG ) *state = FLAG_RCV;
       else *state = START_;
       break;
     case FLAG_RCV:
       isRejected = 0;
-      if (DEBUG == 1) fprintf(stdout,"Entered in FLAG_RCV\n");
+      //if (DEBUG == 1) fprintf(stdout,"Entered in FLAG_RCV\n");
       if( frame_byte == FLAG) return SUCCESS;
       else if( frame_byte == A_BYTE ) *state = A_RCV;
       else *state = START_;
       break;
     case A_RCV:
-      if (DEBUG == 1) fprintf(stdout,"Entered in A_RCV\n");
+      //if (DEBUG == 1) fprintf(stdout,"Entered in A_RCV\n");
       if( reject != NULL && frame_byte == *reject ) {
         fprintf(stderr,"Rej Byte\n");
         isRejected = 1;
@@ -32,18 +32,18 @@ int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE
       else *state = START_;
       break;
     case C_RCV:
-      if (DEBUG == 1) fprintf(stdout,"Entered in C_RCV\n");
+      //if (DEBUG == 1) fprintf(stdout,"Entered in C_RCV\n");
       if( frame_byte == FLAG ) *state = FLAG_RCV;
       else if( frame_byte == BCC(A_BYTE,C_BYTE)  ) *state = BCC_OK;
       else *state = START_;
       break;
     case BCC_OK:
-      if (DEBUG == 1) fprintf(stdout,"Entered in BCC_OK\n");
+      //if (DEBUG == 1) fprintf(stdout,"Entered in BCC_OK\n");
       if( frame_byte == FLAG ) *state = STOP_;
       else *state = START_;
       break;
     default:
-      if (DEBUG == 1) fprintf(stdout,"Default statement reached\n");
+      //if (DEBUG == 1) fprintf(stdout,"Default statement reached\n");
       break;
     }
     if( *state == STOP_ && isRejected ){

@@ -2,6 +2,7 @@
 #define MACROS_H
 
 #define ALARM_INTERVAL 3                /* Time interval between triggering the signal */
+#define MAX_NO_ANSWER 5                 /* Max number of timeouts accepted */
 
 #define SENDERID 0
 #define RECEIVERID 1
