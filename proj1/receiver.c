@@ -69,7 +69,6 @@ int openReceiver(char filename[]){
 
 
 int receiveSetFrame( int fd ){
-  char byte;
   MACHINE_STATE receiverState = START_;
 
   while( receiverState != STOP_){
@@ -145,86 +144,88 @@ int dataDeStuffing(char *stuffedBuffer, int stuffedBufferSize, char *buffer, cha
 
 int receivedStuffedDataSM(MACHINE_STATE *state, int fd, char *stuffedBuffer, char *buffer){
 
-  int isRepeated, bufferSize, index;
+  u_int8_t receivedAddress, receivedControl, calculatedBCC,
+          ctrl = C_FRAME_I(1-r), repeatedCtrl = C_FRAME_I(r), calculatedBCC2, bcc2;
 
-  char frame_byte, receivedAdd, repeatedCtrl = C_FRAME_I(r), ctrl = C_FRAME_I(1-r), receivedCtrl, calcBCC, bcc2, calcBCC2;
+  int currentDataIdx, isRepeated, dataSize;
+  u_int8_t stuffed_data[STUFF_DATA_MAX];
 
+  while (*state != STOP_) {
+    u_int8_t byte;
 
-  while(*state != STOP_){
-    if(getBytefromFd(fd, &frame_byte) == ERROR){
-      return ERROR;
-    }
+    if( getBytefromFd(fd, &byte) == ERROR );
 
     switch (*state) {
       case START_:
-        //if (DEBUG == 1) fprintf(stdout,"Entered in START_\n");
-        if( frame_byte == FLAG ) *state = FLAG_RCV;
-        else *state = START_;
+        if (DEBUG == 1) fprintf(stdout,"Entered in START_ | ");
+        if (byte == FLAG) *state = FLAG_RCV;
         break;
+
       case FLAG_RCV:
-        //if (DEBUG == 1) fprintf(stdout,"Entered in FLAG_RCV\n");
-        if( frame_byte == FLAG ) continue;
-        else if( frame_byte == A_SR ) {
-          *state = A_RCV;
+        if (DEBUG == 1) fprintf(stdout,"Entered in FLAG_RCV | ");
+        if (byte == FLAG) continue;
+        else if (byte == A_SR) {
           isRepeated = 0;
-          receivedAdd = frame_byte;
+          receivedAddress = byte;
+          *state = A_RCV;
         }
         else *state = START_;
         break;
+
       case A_RCV:
-        //if (DEBUG == 1) fprintf(stdout,"Entered in A_RCV\n");
-        if( frame_byte == repeatedCtrl ) isRepeated = 1;
-        if( frame_byte == FLAG ) *state = FLAG_RCV;
-        else if( frame_byte == ctrl || isRepeated ) {
+        if (DEBUG == 1) fprintf(stdout,"Entered in A_RCV | ");
+        if (byte == repeatedCtrl) isRepeated = 1;
+        if (byte == FLAG) *state = FLAG_RCV;
+        else if (byte == ctrl || isRepeated) {
+          receivedControl = byte;
+          calculatedBCC = receivedAddress ^ receivedControl;
           *state = C_RCV;
-          receivedCtrl = frame_byte;
-          calcBCC = BCC(receivedCtrl,receivedAdd);
         }
         else *state = START_;
         break;
+
       case C_RCV:
-        //if (DEBUG == 1) fprintf(stdout,"Entered in C_RCV\n");
-        if( frame_byte == FLAG ) *state = FLAG_RCV;
-        else if( frame_byte == calcBCC ) {
+        if (DEBUG == 1) fprintf(stdout,"Entered in C_RCV | ");
+        if (byte == FLAG) *state = FLAG_RCV;
+        else if (calculatedBCC == byte) {
           *state = BCC_OK;
-          index = 0;
+          currentDataIdx = 0;
         }
         else *state = START_;
         break;
+
       case BCC_OK:
-        //if (DEBUG == 1) fprintf(stdout,"Entered in BCC_OK\n");
-        if( index >= STUFF_DATA_MAX ) *state = START_;
-        else if( frame_byte == FLAG ) {
-          bufferSize = dataDeStuffing(stuffedBuffer, index, buffer, &bcc2);
-          calcBCC2 = createBCC2(buffer, bufferSize);
+        if (DEBUG == 1) fprintf(stdout,"Entered in BCC_OK\n");
+        if (currentDataIdx >= STUFF_DATA_MAX) *state = START_;
+        else if (byte == FLAG) {
+          dataSize = dataDeStuffing(stuffed_data, currentDataIdx, buffer, &bcc2);
+          calculatedBCC2 = createBCC2(buffer, dataSize);
           /*Slide 15*/
-          if( isRepeated ){
-            if( sendSupervisionFrame(fd, A_SR, C_RR(1-r)) == ERROR ){
+          if (isRepeated) {
+            if (sendSupervisionFrame(fd, A_SR, C_RR(1 - r)) == ERROR) {
               fprintf(stderr, "Error sending supervision frame repeting frame\n");
-              *state = START_;
-              return ERROR;
+              return -1;
             }
             *state = START_;
           }
-          else if( calcBCC2 != bcc2 ){
-            if( sendSupervisionFrame(fd, A_SR, C_REJ(1-r)) == ERROR ){
+          else if (calculatedBCC2 != bcc2) {
+            if (sendSupervisionFrame(fd, A_SR, C_REJ(1 - r)) == ERROR) {
               fprintf(stderr, "Error sending supervision frame rejecting frame\n");
-              *state = START_;
               return ERROR;
             }
             *state = START_;
           }
           else *state = STOP_;
         }
-        else stuffedBuffer[index++] = frame_byte;
+        else stuffed_data[currentDataIdx++] = byte;
         break;
-      default:
-        //if (DEBUG == 1) fprintf(stdout,"Default statement reached\n");
-        break;
-      }
-    }
 
-    return bufferSize;
+      default:
+        break;
+    }
+  }
+
+  return dataSize;
 }
 
 
@@ -239,7 +240,6 @@ int receivedStuffedData(int fd, char *buffer){
     return ERROR;
   }
 
-
   if( sendSupervisionFrame(fd, A_SR, C_RR(r)) == ERROR ){
     fprintf(stderr, "Error sending supervision frame for all data received well\n");
     return ERROR;
@@ -249,41 +249,3 @@ int receivedStuffedData(int fd, char *buffer){
 
   return size;
 }
-
-/*
-int main(int argc, char **argv)
-{
-  //freopen("output.txt","a+", stdout); /* STDOUT to file *//*
-  if ((argc < 2) ||
-      ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
-       (strcmp("/dev/ttyS11", argv[1]) != 0)))
-  {
-    fprintf(stdout,"Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS11\n");
-    exit(1);
-  }
-
-  fprintf(stdout,"Running\n");
-
-  int fd = openReceiver(argv[1]);
-
-  char buffer[STUFF_DATA_MAX];
-  int size = receivedStuffedData(fd, buffer );
-  printf("Out\n");
-
-  for(int i = 0; i < size; i++) fprintf(stdout,"Byte -> %02x\n",buffer[i]);
-  /*char stuff[9] = {0x7d,0x5d, 0x01,0x02,0x03, 0x04, 0x05, 0x7d, 0x5e};
-  char buff[7];
-  char bccc[1];
-  int size = dataDeStuffing(stuff,9,buff,bccc);
-  fprintf(stdout,"Leaving data stuffing\n");
-
-  for(int i = 0; i < size; i++) fprintf(stdout,"Byte -> %02x\n",buff[i]);
-  fprintf(stdout,"BCC2 -> %02x\n", bccc[0]);*/
-
-/*
-  fprintf(stdout,"Sleeping\n");
-
-  closeReceiver(fd);
-
-
-}*/

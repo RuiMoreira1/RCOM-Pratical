@@ -3,6 +3,21 @@
 
 #include <signal.h>
 #include "macros.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <stdio.h>
+#include "common.h"
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+
+#define BAUDRATE B38400
+#define _POSIX_SOURCE 1 /* POSIX compliant source */
+#define FALSE 0
+#define TRUE 1
 
 /**
  * @brief Answer the alarm to if necessary resend the info from the sender,

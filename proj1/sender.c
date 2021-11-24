@@ -1,20 +1,4 @@
-/**
- * Non-Canonical Input Processing
- * From https://tldp.org/HOWTO/Serial-Programming-HOWTO/x115.html by Gary Frerking and Peter Baumann
-**/
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <termios.h>
-#include <stdio.h>
-#include "common.h"
 #include "sender.h"
-
-
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
 
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
@@ -277,44 +261,3 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 
 	return bufferSize;
 }
-
-/*
-int main(int argc, char **argv)
-{
-  if ((argc < 2) ||
-      ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
-       (strcmp("/dev/ttyS11", argv[1]) != 0)))
-  {
-    fprintf(stdout,"Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS11\n");
-    exit(1);
-  }
-
-	fprintf(stdout,"Sender active\n");
-
-  int fd = openSender(argv[1]);
-
-	fprintf(stdout,"Sending stuffed frame\n");
-	char buffer[7] = {0x7e,0x01,0x02,0x03,0x04,0x05, 0x7d};
-	int sizeBuffer = sendStuffedFrame(fd, buffer, 7);
-	fprintf(stdout,"Out of stuffed frame\n");
-
-
-/*	fprintf(stdout,"Buffer stuffing test\n");
-
-	char buffer[6] = {0x7d,0x01,0x02,0x03,0x04,0x05};
-	char stuffedBuffer[STUFF_DATA_MAX];
-	char BCC2 = 0x7e;
-	int size = dataStuffing(buffer, 6, BCC2, stuffedBuffer);
-
-	for(int i = 0; i <size; i++) fprintf(stdout,"Byte -> %02x\n", stuffedBuffer[i]);*/
-
-
-/*
-	fprintf(stdout,"Closing\n");
-
-	closeSender(fd);
-
-
-
-
-}*/

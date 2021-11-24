@@ -18,9 +18,9 @@
 #define C_UA 0x07                       /* Ua Trame Cfield */
 #define C_SET 0x03                      /* Set Trame CField */
 #define C_DISC 0x0B                     /* Disc Trame CField */
-#define C_FRAME_I(n) ( BIT(6*n) & 0x40) /* I frame stuffing logical and. 0x40 in case s->1 0x00 in case s->0 */
-#define C_RR(n) (BIT(7*n) | 0x05)       /* S/U Frame RR field logical and 0x85 in case n->1 0x05 in case n->0 */
-#define C_REJ(n) (BIT(7*n) | 0x01)      /* S/U Frame REJ field logical and 0x81 in case n->1 0x01 in case n->0 */
+#define C_FRAME_I(n) ( BIT(6*(n)) & 0x40) /* I frame stuffing logical and. 0x40 in case s->1 0x00 in case s->0 */
+#define C_RR(n) (BIT(7*(n)) | 0x05)       /* S/U Frame RR field logical and 0x85 in case n->1 0x05 in case n->0 */
+#define C_REJ(n) (BIT(7*(n)) | 0x01)      /* S/U Frame REJ field logical and 0x81 in case n->1 0x01 in case n->0 */
 #define ESCAPE 0x7D                     /* Escape Byte */
 #define FLAG_ESCAPE_XOR 0x5E            /* FLAG ^ 0x20 */
 #define ESCAPE_XOR 0x5D                 /* Escape ^ 0x20 */
