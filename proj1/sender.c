@@ -192,10 +192,10 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 	}
 
 	char I_C_BYTE = C_FRAME_I(s);
-	char BCC2 = createBCC2(buffer, bufferSize);
+	char BCC2;
 
-	if( BCC2 == '\0' ) {
-		if(DEBUG) fprintf(stdout,"Error generating BCC2, data field problem\n");
+	if( createBCC2(buffer, bufferSize, &BCC2) == ERROR ) {
+		fprintf(stderr,"Error generating BCC2, data field problem\n");
 		return ERROR;
 	}
 
@@ -244,7 +244,7 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 			fprintf(stderr,"Error receiving correct info from receiver\n");
 			return ERROR;
 		}
-		else if ( supervisionRes > 0){
+		else if ( supervisionRes > 0 ){
 			flag = 1; conta++; /* Stuffed message wasn't acknowledged correctly resend frame */
 		}
 

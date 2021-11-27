@@ -75,7 +75,7 @@ int sendSupervisionFrame(int fd, char A_BYTE, char C_BYTE){
   return SUCCESS;
 }
 
-char createBCC2(char *buffer, int bufferSize){
+int createBCC2(char *buffer, int bufferSize, char *bcc2){
   if(sizeof(buffer) > 0){
     char BCC2 = buffer[0];
 
@@ -83,10 +83,11 @@ char createBCC2(char *buffer, int bufferSize){
       BCC2 ^= buffer[i];
     }
 
-    return BCC2;
+    *bcc2 = BCC2;
+    return SUCCESS;
   }
   else{
     fprintf(stderr,"Unable to create BCC2, buffer not allocated correclty\n");
-    return '\0';
+    return ERROR;
   }
 }
