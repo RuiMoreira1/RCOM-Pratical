@@ -75,7 +75,7 @@ int sendSetFrame(int fd){
 	char setFrame[5] = {FLAG, A_SR, C_SET, BCC(A_SR,C_SET),FLAG};
 
 	while(setState != STOP_){
-		if( conta == 3 ){
+		if( conta == MAX_NO_ANSWER ){
 				fprintf(stderr,"Communication between Receiver && Sender failed SET\n");
 				return ERROR;
 		}
@@ -109,7 +109,7 @@ int senderDisc(int fd){
 	MACHINE_STATE senderState = START_;
 
 	while( senderState != STOP_ ){
-		if( conta == 3 ){
+		if( conta == MAX_NO_ANSWER ){
 			fprintf(stdout,"Communication between Receiver && Sender failed DISC\n");
 			return ERROR;
 		}
