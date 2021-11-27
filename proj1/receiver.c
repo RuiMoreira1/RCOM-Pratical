@@ -180,7 +180,10 @@ int receivedStuffedDataSM(MACHINE_STATE *state, int fd, char *stuffedBuffer, cha
         if (currentDataIdx >= STUFF_DATA_MAX) *state = START_;
         else if (byte == FLAG) {
           dataSize = dataDeStuffing(stuffed_data, currentDataIdx, buffer, &bcc2);
-          calculatedBCC2 = createBCC2(buffer, dataSize);
+          if( createBCC2(buffer, dataSize, &calculatedBCC2) == ERROR ){
+            fprintf(stderr,"Error generating BCC2, data field problem\n");
+		        return ERROR;
+          }
           /*Slide 15*/
           if (isRepeated) {
             if (sendSupervisionFrame(fd, A_SR, C_RR(1 - r)) == ERROR) {

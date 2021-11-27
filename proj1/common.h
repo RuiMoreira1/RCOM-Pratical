@@ -54,6 +54,6 @@ int sendSupervisionFrame(int fd, char A_BYTE, char C_BYTE);
  * @param  bufferSize               Information camp size
  * @return            BCC2 upon success, '\0' otherwise
  */
-char createBCC2(char *buffer, int bufferSize);
+int createBCC2(char *buffer, int bufferSize, char *bcc2);
 
 #endif
