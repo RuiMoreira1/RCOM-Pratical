@@ -37,7 +37,6 @@ int llclose(int fd, int id){
 
 
 int llwrite(int fd, char *buffer, int size, int id){
-  //sleep(1);
   if( id == RECEIVERID ){
     fprintf(stderr,"The receiver is unable send data\n");
     return ERROR;
