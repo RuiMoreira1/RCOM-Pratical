@@ -1,6 +1,1 @@
-receiver
-sender
-*.o
-*.d
-serialport
-.txt .gif
+test/
