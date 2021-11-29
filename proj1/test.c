@@ -58,12 +58,26 @@ void printHelpMessage(){
   fprintf(stdout, "\tserialport -d -i receiver\t\t\t Serial port receiver side, debug mode active receiving pinguim.gid\n");
 }
 
+int execution(int argc, char **argv){
+  int *res = parseArgs(argc, argv);
+  if( res == NULL ){
+    fprintf(stderr,"No matching call\n");
+  }
+  else if( res[1] == 1 ){
+    printHelpMessage();
+  }
+  else if( res[0] == 1 ) fprintf(stdout,"Debug mode enabled\n");
+}
+
 int main (int argc, char **argv){
-  printHelpMessage();
+  execution(argc,argv);
   int *res = parseArgs(argc, argv);
   if( res == NULL ){
    printf("Aqui\n");
    exit(1);
+  }
+  else if( res[1] == 1 ){
+    printHelpMessage();
   }
   printf("%d\n",res[0]);
   return 0;
