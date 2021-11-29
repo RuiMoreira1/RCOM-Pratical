@@ -135,7 +135,7 @@ int readFile(int fd) {
 
   int size;
   u_int8_t sequenceNum = 0;
-  while ((size = llread(fd, buffer, RECEIVERID)) > 0) {
+  while ((size = llread(fd, buffer, RECEIVERID)) != ERROR) {
     if (buffer[0] == END_CTRL) {
       break;  // Reached END control packet
     }
@@ -160,5 +160,6 @@ int readFile(int fd) {
 
   free(fileName);
   fclose(ptr);
+  if( size == ERROR ) return ERROR; /*If the serial for is closed, the receiver side closes*/
   return fileSize;
 }

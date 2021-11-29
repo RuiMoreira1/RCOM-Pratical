@@ -126,11 +126,13 @@ int main(int argc, char** argv) {
   if (status == SENDERID) {
     if (sendFile(fd, filePath) < 0) {
       fprintf(stderr, "Error sending file\n");
+      //llclose(fd,SENDERID);
       exit(1);
     }
   } else {
     if (readFile(fd) < 0) {
       fprintf(stderr, "Error reading file!\n");
+      //llclose(fd,status);
       exit(1);
     }
   }

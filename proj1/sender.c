@@ -116,7 +116,7 @@ int senderDisc(int fd){
 
 		if( flag ){
 			flag = 0;
-			if( write(fd, frame, 5) == -1 ){
+			if( write(fd, frame, 5) == ERROR ){
 				fprintf(stderr,"Error writing to Serial Port DISC frame\n");
 				return ERROR;
 			}
@@ -143,7 +143,7 @@ int closeSender(int fd){
 
 	if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
   {
-    fprintf(stderr,"tcsetattr");
+    fprintf(stderr,"tcsetattr\n");
     return ERROR;
   }
   close(fd);
@@ -218,17 +218,17 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 			flag = 0;
 
 			if( write(fd , frameH, 4) == ERROR ){
-				fprintf(stderr,"Error writing to Serial Port Frame Header\n");
+				fprintf(stderr,"Error writing to Serial Port [Frame Header]\n");
 				return ERROR;
 			}
 
 			if( write(fd, stuffedBuffer, stuffedBufferSize) == ERROR ){
-				fprintf(stderr,"Error writing to Serial Port Stuffed Data\n");
+				fprintf(stderr,"Error writing to Serial Port [Stuffed Data]\n");
 				return ERROR;
 			}
 
 			if( write(fd, &frameT, 1) == ERROR ){
-				fprintf(stderr,"Error writing to Serial Port Frame Tail\n");
+				fprintf(stderr,"Error writing to Serial Port [Frame Tail]\n");
 				return ERROR;
 			}
 
