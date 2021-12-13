@@ -91,3 +91,9 @@ int createBCC2(char *buffer, int bufferSize, char *bcc2){
     return ERROR;
   }
 }
+
+void insertError(char *data, int size, int probability){
+  int r = rand() % 100;
+
+  if( r < probability ) data[size] += 2;  
+}

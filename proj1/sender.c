@@ -204,6 +204,8 @@ int sendStuffedFrame(int fd, char* buffer, int bufferSize){
 	char stuffedBuffer[STUFF_DATA_MAX];
 
 	int stuffedBufferSize = dataStuffing(buffer, bufferSize, BCC2, stuffedBuffer);
+	//insertError(stuffedBuffer, 0, 2);
+	//insertError(frameH,3,2);
 
 	MACHINE_STATE stuffedBufferState = START_;
 
