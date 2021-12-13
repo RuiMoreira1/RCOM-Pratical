@@ -2,7 +2,7 @@
 #define TEST_H
 
 
-int* parseArgs(int argc, char **argv);
+int* parseArgs(int argc, char **argv, char *id);
 
 void printHelpMessage();
 

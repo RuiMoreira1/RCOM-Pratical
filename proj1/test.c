@@ -2,13 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 
-int* parseArgs(int argc, char **argv){
+int* parseArgs(int argc, char **argv, char *id){
   int *flagFrame; /* Debug, Help, Identity ... */
   flagFrame = malloc(4* sizeof *flagFrame);
   int index, c;
-  char *id = NULL;
 
   opterr = 0;
 
@@ -22,7 +22,7 @@ int* parseArgs(int argc, char **argv){
         break;
       case 'i':
         flagFrame[2] = 1;
-        id = optarg;
+        strcpy(id,optarg);
         break;
       case 'b':
         flagFrame[3] = 1;
@@ -35,7 +35,7 @@ int* parseArgs(int argc, char **argv){
         abort();
       }
 
-  printf ("dflag = %d, hflag = %d, cvalue = %s\n",flagFrame[0], flagFrame[1], id);
+  //printf ("dflag = %d, hflag = %d, cvalue = %s\n",flagFrame[0], flagFrame[1], id);
 
   if( (argc - optind) > 1 ) {
     fprintf(stderr, "Error inserting arguments!\n");
@@ -55,23 +55,39 @@ void printHelpMessage(){
   fprintf(stdout, "\t-h\t\t\t serial port help message\n\n");
   fprintf(stdout, "Examples:\n");
   fprintf(stdout, "\tserialport -i sender -d file.txt\t\t\t Serial port sender side, debug mode active sending file.txt\n");
-  fprintf(stdout, "\tserialport -d -i receiver\t\t\t Serial port receiver side, debug mode active receiving pinguim.gid\n");
+  fprintf(stdout, "\tserialport -d -i receiver\t\t\t\t Serial port receiver side, debug mode active receiving pinguim.gid\n");
 }
 
 int execution(int argc, char **argv){
-  int *res = parseArgs(argc, argv);
+  int i = -1;
+  char *id = (char *) malloc(15*sizeof(char));
+  int *res = parseArgs(argc, argv, id);
   if( res == NULL ){
     fprintf(stderr,"No matching call\n");
+    return -1;
   }
-  else if( res[1] == 1 ){
+  if( res[1] == 1 ){
     printHelpMessage();
+    return 0;
   }
-  else if( res[0] == 1 ) fprintf(stdout,"Debug mode enabled\n");
+  if( res[0] == 1 ) {
+    fprintf(stdout,"Debug mode enabled\n");
+  }
+  if( res[2] == 1 ){
+    if( (strcmp(id,"emissor") != 0) && (strcmp(id,"receiver") != 0) ) return -1;
+    else {
+      fprintf(stdout,"%s Side\n", id);
+      i = (strcmp(id,"emissor") == 0) ? 0 : 1;
+    }
+    return 0;
+  }
+  return 0;
 }
 
 int main (int argc, char **argv){
   execution(argc,argv);
-  int *res = parseArgs(argc, argv);
+  
+  /*int *res = parseArgs(argc, argv, idE);
   if( res == NULL ){
    printf("Aqui\n");
    exit(1);
@@ -80,5 +96,6 @@ int main (int argc, char **argv){
     printHelpMessage();
   }
   printf("%d\n",res[0]);
+  printf("%s\n", idE);*/
   return 0;
 }
