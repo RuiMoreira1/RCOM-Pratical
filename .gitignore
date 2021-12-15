@@ -4,8 +4,8 @@ test
 .vscode
 serialport
 a.out
-pinguim3.jpg
-pinguim2.jpeg
+*.jpg
+*.jpeg
 Stderr_sender
 Stdout_sender
 Stdout_receiver
