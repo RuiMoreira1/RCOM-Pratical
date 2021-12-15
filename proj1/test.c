@@ -5,14 +5,14 @@
 #include <string.h>
 
 
-int* parseArgs(int argc, char **argv, char *id){
+int* parseArgs(int argc, char **argv, char *id, char *file, char *serialPort){
   int *flagFrame; /* Debug, Help, Identity ... */
   flagFrame = malloc(4* sizeof *flagFrame);
   int index, c;
 
   opterr = 0;
 
-  while ((c = getopt (argc, argv, "dhi:b:")) != -1)
+  while ((c = getopt (argc, argv, "dhi:f:")) != -1)
     switch (c){
       case 'd':
         flagFrame[0] = 1;
@@ -24,8 +24,10 @@ int* parseArgs(int argc, char **argv, char *id){
         flagFrame[2] = 1;
         strcpy(id,optarg);
         break;
-      case 'b':
+      case 'f':
         flagFrame[3] = 1;
+        strcpy(file,optarg);
+        break;
       case '?':
         if (optopt == 'c') fprintf(stderr, "Option -%c requires an argument.\n", optopt);
         else if (isprint (optopt)) fprintf(stderr, "Unknown option `-%c'.\n", optopt);
@@ -37,12 +39,14 @@ int* parseArgs(int argc, char **argv, char *id){
 
   //printf ("dflag = %d, hflag = %d, cvalue = %s\n",flagFrame[0], flagFrame[1], id);
 
-  if( (argc - optind) > 1 ) {
+  /*if( (argc - optind) > 1 ) {
     fprintf(stderr, "Error inserting arguments!\n");
     return NULL;
-  }
-  for (index = optind; index < argc; index++)
-    printf ("Non-option argument %s\n", argv[index]);
+  }*/
+  if(argv[optind] == NULL ) return NULL;
+
+  strcpy(serialPort, argv[optind]);
+  
   return flagFrame;
 } 
 
@@ -54,14 +58,12 @@ void printHelpMessage(){
   fprintf(stdout, "\t-i\t\t\t serial port side identifier, sender || receiver\n" );
   fprintf(stdout, "\t-h\t\t\t serial port help message\n\n");
   fprintf(stdout, "Examples:\n");
-  fprintf(stdout, "\tserialport -i sender -d file.txt\t\t\t Serial port sender side, debug mode active sending file.txt\n");
+  fprintf(stdout, "\tserialport -i sender -d -f ./file.txt\t\t\t Serial port sender side, debug mode active sending file.txt\n");
   fprintf(stdout, "\tserialport -d -i receiver\t\t\t\t Serial port receiver side, debug mode active receiving pinguim.gid\n");
 }
 
-int execution(int argc, char **argv){
-  int i = -1;
-  char *id = (char *) malloc(15*sizeof(char));
-  int *res = parseArgs(argc, argv, id);
+int validateArgs(int argc, char **argv, int *id, char *file, char *identifier, char *serialPort ){
+  int *res = parseArgs(argc, argv, identifier,file,serialPort);
   if( res == NULL ){
     fprintf(stderr,"No matching call\n");
     return -1;
@@ -70,19 +72,41 @@ int execution(int argc, char **argv){
     printHelpMessage();
     return 0;
   }
+  if( res[2] == 1 ){
+    *id = -1;
+    if( (strcmp(identifier,"emissor") != 0) && (strcmp(identifier,"receiver") != 0) ) return -1;
+    else {
+      fprintf(stdout,"%s Side\n", identifier);
+      *id = (strcmp(identifier,"emissor") == 0) ? 0 : 1;
+    }
+  }
+  if( res[3] != 1 ) file = "./pinguim.gif";
   if( res[0] == 1 ) {
     fprintf(stdout,"Debug mode enabled\n");
   }
-  if( res[2] == 1 ){
-    if( (strcmp(id,"emissor") != 0) && (strcmp(id,"receiver") != 0) ) return -1;
-    else {
-      fprintf(stdout,"%s Side\n", id);
-      i = (strcmp(id,"emissor") == 0) ? 0 : 1;
-    }
-    return 0;
-  }
   return 0;
 }
+
+int execution(int argc, char **argv){
+  int *i = malloc(sizeof(int));
+  char *id = (char *) malloc(15*sizeof(char));
+  char *file = (char *) malloc(100*sizeof(char));
+  char *serialPort = (char*) malloc(20*sizeof(char));
+  if( validateArgs(argc, argv, i, file, id, serialPort) == -1 ){
+    fprintf(stdout,"Bad input provided, try using serialport -h\n");
+    return -1;
+  }
+  fprintf(stdout, "%s\n",file);
+  fprintf(stdout, "Sp=> %s\n",serialPort);
+
+  int fd, status = *i;
+  
+
+  fprintf(stdout, "%d\n",status);
+  fprintf(stdout, "Sp=> %s\n",serialPort);
+  return 0;
+}
+
 
 int main (int argc, char **argv){
   execution(argc,argv);
