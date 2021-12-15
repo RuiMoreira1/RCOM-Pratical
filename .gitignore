@@ -4,5 +4,9 @@ test
 .vscode
 serialport
 a.out
-test.c
-test.h
+pinguim3.jpg
+pinguim2.jpeg
+Stderr_sender
+Stdout_sender
+Stdout_receiver
+Stderr_receiver
