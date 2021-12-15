@@ -1,6 +1,5 @@
 #include "common.h"
 
-
 int isRejected;
 
 int checkSupervisionFrame(MACHINE_STATE *state, int fd, char A_BYTE, char C_BYTE, char* reject){
@@ -87,7 +86,7 @@ int createBCC2(char *buffer, int bufferSize, char *bcc2){
     return SUCCESS;
   }
   else{
-    fprintf(stderr,"Unable to create BCC2, buffer not allocated correclty\n");
+    fprintf(stderr,"Unable to create BCC2, buffer not allocated correctly\n");
     return ERROR;
   }
 }

@@ -1,6 +1,5 @@
 #include "dataLayer.h"
 
-
 int llopen(char *filename, int id){
 
   int fd;
