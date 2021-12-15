@@ -8,12 +8,12 @@
 
 /*! State machine enumeration class */
 typedef enum {
-   START_,    /* Start state */
-   FLAG_RCV,  /* 0x7E is validated */
-   A_RCV,     /* A Field byte is validated*/
-   C_RCV,     /* C Field byte is validated */
-   BCC_OK,    /* BCC(A_FIELD, C_FIELD) byte is validated */
-   STOP_      /* Flags validated correctly */
+   START_,        /* Start state */
+   FLAG_RCV,      /* 0x7E is validated */
+   A_RCV,         /* A Field byte is validated*/
+   C_RCV,         /* C Field byte is validated */
+   BCC_OK,        /* BCC(A_FIELD, C_FIELD) byte is validated */
+   STOP_          /* Flags validated correctly */
  } MACHINE_STATE;
 
 
