@@ -12,8 +12,30 @@
 #define PACKET_DATA_SIZE 200
 
 // T BYTE
+#define T_TYPE_SIZE 0
+#define T_TYPE_NAME 1
+
+// PACKETS CONSTANTS
+#define C_DATA 1
+#define C_START 2
+#define C_END 3
+
+// DATA PACKET CONSTANTS
+#define ADD_FIELDS 4
+#define D_REAL_SIZE (PACKET_DATA_SIZE - ADD_FIELDS)
+#define N_MULT 256
+
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+
+
+
+
+//
+
+// T BYTE
 #define T_FILE_SIZE 0
 #define T_FILE_NAME 1
+
 
 // PACKETS CONSTANTS
 #define DATA_CTRL 1
@@ -31,52 +53,58 @@
 /**
 * @brief Builds data packet, from a given data buffer
 */
-void buildDataPacket(u_int8_t* dataPacket, int dataPacketSize, u_int8_t* frameData, int frameDataSize, u_int8_t sequenceNum);
+void dataPacketBuilder(u_int8_t* dPacket,int dPacketSize, u_int8_t* fData, int fDataSize, u_int8_t sequence);
 
 /**
 * @brief Sends data packet
-* @param fd File Descriptor
-* @param ptr Pointer to file being trasnferred
-* @param fileSize Size of the file in bytes
-* @return Positive if succeeded, negative otherwise
+*
+* @param fd                         File Descriptor
+* @param fd1                        Pointer to file being trasnferred
+* @param fSize                      file size
+* @return               1 upon sucess, otherwise -1
 */
-int sendData(int fd, FILE* ptr, long fileSize);
+int sendData(int fd, FILE* fd1, long fSize);
+
 
 /**
- * [sendControlPacket  description]
- * @param  fd                         [description]
- * @param  controlField               [description]
- * @param  fileSize                   [description]
- * @param  fileName                   [description]
- * @return              [description]
+ * @brief creates and sends a control packet
+ *
+ * @param  fd                      file descriptor
+ * @param  cField                  control field
+ * @param  fSize                   file size
+ * @param  fName                   file name
+ * @return              1 upon sucess, otherwise -1 
  */
-int sendControlPacket (int fd, u_int8_t controlField, long fileSize, char fileName[]);
+int sendControlPacket (int fd, u_int8_t cField, long fSize, char fName[]);
 
 /**
- * [sendFile description]
- * @param  fd                     [description]
- * @param  filePath               [description]
- * @return          [description]
+ * @brief Sends the controlPackets and the data packet
+ *
+ * @param  fd                       File descriptor
+ * @param  fPath                    File Path
+ * @return          file Size upon success, otherwise -1
  */
-int sendFile(int fd, char filePath[]);
+int sendFile(int fd, char fPath[]);
 
 
 /**
- * [readFile description]
- * @param  fd               [description]
- * @return    [description]
+ * @brief Reads all packets and creates the file read
+ *
+ * @param  fd                       File descriptor
+ * @return    file Size upon success, otherwise -1
  */
 int readFile(int fd);
 
 /**
- * [readControlPacket description]
- * @param  fd                         [description]
- * @param  controlField               [description]
- * @param  buffer                     [description]
- * @param  fileName                   [description]
- * @param  fileSize                   [description]
- * @return              [description]
+ * @brief reads a control packet and alocates the file name and file size 
+ *
+ * @param  fd                       file descriptor
+ * @param  cField                   control field
+ * @param  buf                      buffer where the control packet is
+ * @param  fName                    file name 
+ * @param  fSize                    file size
+ * @return              1 upon sucess, otherwise -1
  */
-int readControlPacket(int fd, int controlField, u_int8_t buffer[], char** fileName, long* fileSize);
+int readControlPacket(int fd, u_int8_t cField, u_int8_t buf[], char** fName, long* fSize);
 
 #endif
