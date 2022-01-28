@@ -307,7 +307,7 @@ int handleCommunication(int sockfd, char *cmd, char *argument, char *text)
         /* resend the command */
         case 4:
             if (handleCommunication(sockfd, cmd, argument, text) < 0)
-                return -1;
+                return ERROR;
             break;
 
         /* permanent negative completion reply */
